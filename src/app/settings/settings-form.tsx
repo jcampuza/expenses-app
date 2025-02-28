@@ -2,6 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { UserResource } from "@clerk/types";
+import { useMutation } from "@tanstack/react-query";
 import { Loader2, QrCode, Delete } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -16,7 +17,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { toast, useToast } from "~/hooks/use-toast";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/utils";
 
 type State =
   | { status: "idle"; data: null; invitationLink: null }
@@ -63,15 +64,19 @@ function ExpireInvitationsDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const expireInvitations = api.invitation.expireAllInvitations.useMutation({
-    onSuccess: () => {
-      setOpen(false);
-      toast({
-        title: "Invitations Expired",
-        description: "All invitations have been expired.",
-      });
-    },
-  });
+  const trpc = useTRPC();
+
+  const expireInvitations = useMutation(
+    trpc.invitation.expireAllInvitations.mutationOptions({
+      onSuccess: () => {
+        setOpen(false);
+        toast({
+          title: "Invitations Expired",
+          description: "All invitations have been expired.",
+        });
+      },
+    }),
+  );
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => setOpen(isOpen)}>
@@ -112,7 +117,10 @@ function GenerateInvitationDialog({ user }: { user: UserResource }) {
     invitationLink: null,
   });
 
-  const { mutateAsync } = api.invitation.getInviationLink.useMutation();
+  const trpc = useTRPC();
+  const { mutateAsync } = useMutation(
+    trpc.invitation.getInviationLink.mutationOptions(),
+  );
 
   const generateQRCode = async () => {
     setState({ status: "loading", data: null, invitationLink: null });
@@ -123,7 +131,7 @@ function GenerateInvitationDialog({ user }: { user: UserResource }) {
       });
       const invitationLink = dataFromMutation.invitationLink;
       const { renderSVG } = await import("uqr");
-      const svg = renderSVG(`${invitationLink}`);
+      const svg = renderSVG(`${window.location.hostname}${invitationLink}`);
       setState({
         status: "ready",
         data: svg,

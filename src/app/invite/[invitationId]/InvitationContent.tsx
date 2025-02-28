@@ -1,18 +1,22 @@
 "use client";
 
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import React from "react";
 import { Button } from "~/components/ui/button";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/utils";
 
 export function InvitationContent({ invitationId }: { invitationId: string }) {
-  const acceptInvitationMutation =
-    api.invitation.acceptInvitation.useMutation();
-  const userFromInvitation = api.invitation.getUserFromInvitation.useQuery({
-    token: invitationId,
-  });
+  const trpc = useTRPC();
 
-  console.log(userFromInvitation.error);
+  const acceptInvitationMutation = useMutation(
+    trpc.invitation.acceptInvitation.mutationOptions(),
+  );
+  const userFromInvitation = useQuery(
+    trpc.invitation.getUserFromInvitation.queryOptions({
+      token: invitationId,
+    }),
+  );
 
   if (userFromInvitation.isLoading) {
     return (

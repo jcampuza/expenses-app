@@ -7,6 +7,7 @@ const config = {
   plugins: ["@typescript-eslint", "drizzle"],
   extends: ["next/core-web-vitals", "plugin:@typescript-eslint/strict"],
   rules: {
+    "@typescript-eslint/no-unused-vars": "error",
     "drizzle/enforce-delete-with-where": [
       "error",
       {

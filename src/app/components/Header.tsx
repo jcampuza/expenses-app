@@ -5,8 +5,10 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "~/components/ui/button";
 
 export function Header() {
   return (
@@ -25,21 +27,18 @@ export function Header() {
             priority
           ></Image>
 
-          <span className="text-xl font-bold">ExpenseThing</span>
+          <span className="text-xl font-bold">ExpenseMate</span>
         </Link>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center">
         <SignedOut>
           <SignInButton>
-            <span className="cursor-pointer text-accent-foreground hover:underline focus:underline">
-              Sign in
-            </span>
+            <Button variant={"link"}>Sign in</Button>
           </SignInButton>
+
           <SignUpButton>
-            <span className="cursor-pointer text-accent-foreground hover:underline focus:underline">
-              Sign up
-            </span>
+            <Button variant={"link"}>Sign out</Button>
           </SignUpButton>
         </SignedOut>
 

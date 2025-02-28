@@ -1,13 +1,17 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { buttonVariants } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { getBalanceTitle } from "~/lib/utils";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/utils";
 
 export function ConnectionsList() {
-  const connectionsQuery = api.connections.getConnectedUsers.useQuery();
+  const trpc = useTRPC();
+  const connectionsQuery = useQuery(
+    trpc.connections.getConnectedUsers.queryOptions(),
+  );
 
   if (connectionsQuery.isLoading) {
     return (

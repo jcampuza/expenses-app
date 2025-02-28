@@ -15,6 +15,7 @@ import {
 export const expensesRouter = createTRPCRouter({
   getMyExpenses: protectedProcedure.query(async ({ ctx }) => {
     // Ensure the user is authenticated
+    console.time("getMyExpenses");
     if (!ctx.session?.userId) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
@@ -24,6 +25,7 @@ export const expensesRouter = createTRPCRouter({
 
     const userExpenses = await getAllUserExpenses(ctx.db, ctx.session.userId);
 
+    console.timeEnd("getMyExpenses");
     return { expenses: userExpenses };
   }),
 

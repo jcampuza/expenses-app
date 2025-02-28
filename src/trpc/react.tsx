@@ -1,71 +1,69 @@
 "use client";
 
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import {
-  loggerLink,
-  TRPCClientError,
-  unstable_httpBatchStreamLink,
-} from "@trpc/client";
-import { createTRPCReact } from "@trpc/react-query";
+import { httpLink, TRPCClientError } from "@trpc/client";
+import { createTRPCClient } from "@trpc/client";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
 import { type AppRouter } from "~/server/api/root";
 import { createQueryClient } from "./query-client";
+import { TRPCProvider } from "~/trpc/utils";
 
-let clientQueryClientSingleton: QueryClient | undefined = undefined;
+let browserQueryClient: QueryClient | undefined = undefined;
 const getQueryClient = () => {
+  // SSR
   if (typeof window === "undefined") {
-    // Server: always make a new query client
-    const serverQueryClient = createQueryClient();
-    serverQueryClient.setDefaultOptions({
+    return createQueryClient();
+  }
+
+  // Client
+  if (!browserQueryClient) {
+    browserQueryClient = createQueryClient();
+    browserQueryClient.setDefaultOptions({
       queries: {
-        refetchOnWindowFocus: true,
-        refetchOnReconnect: true,
-        staleTime: 1000 * 60,
+        retry: (failureCount, error) => {
+          if (!(error instanceof TRPCClientError)) {
+            return false;
+          }
+
+          // Do not retry the request if it doesn't fit into one of these. It doesn't make sense.
+          const retryableCodes = new Set([
+            "BAD_REQUEST",
+            "TIMEOUT",
+            "INTERNAL_SERVER_ERROR",
+            "TOO_MANY_REQUESTS",
+          ]);
+
+          if (!retryableCodes.has(error.data.code)) {
+            return false;
+          }
+
+          return failureCount < 3;
+        },
       },
     });
-
-    return serverQueryClient;
-  }
-  // Browser: use singleton pattern to keep the same query client
-  if (clientQueryClientSingleton) {
-    return clientQueryClientSingleton;
   }
 
-  clientQueryClientSingleton = createQueryClient();
-  clientQueryClientSingleton.setDefaultOptions({
-    queries: {
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-      staleTime: 1000 * 60,
-      retry: (failureCount, error) => {
-        if (!(error instanceof TRPCClientError)) {
-          return false;
-        }
-
-        // Do not retry the request if it doesn't fit into one of these. It doesn't make sense.
-        const retryableCodes = new Set([
-          "BAD_REQUEST",
-          "TIMEOUT",
-          "INTERNAL_SERVER_ERROR",
-          "TOO_MANY_REQUESTS",
-        ]);
-
-        if (!retryableCodes.has(error.data.code)) {
-          return false;
-        }
-
-        return failureCount < 3;
-      },
-    },
-  });
-
-  return clientQueryClientSingleton;
+  return browserQueryClient;
 };
 
-export const api = createTRPCReact<AppRouter>();
+const createApi = () =>
+  createTRPCClient<AppRouter>({
+    links: [
+      httpLink({
+        transformer: SuperJSON,
+        url: getBaseUrl() + "/api/trpc",
+        headers: () => {
+          const headers = new Headers();
+          headers.set("x-trpc-source", "nextjs-react");
+          return headers;
+        },
+      }),
+    ],
+  });
+
 /**
  * Inference helper for inputs.
  *
@@ -83,32 +81,13 @@ export type RouterOutputs = inferRouterOutputs<AppRouter>;
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
 
-  const [trpcClient] = useState(() =>
-    api.createClient({
-      links: [
-        loggerLink({
-          enabled: (op) =>
-            process.env.NODE_ENV === "development" ||
-            (op.direction === "down" && op.result instanceof Error),
-        }),
-        unstable_httpBatchStreamLink({
-          transformer: SuperJSON,
-          url: getBaseUrl() + "/api/trpc",
-          headers: () => {
-            const headers = new Headers();
-            headers.set("x-trpc-source", "nextjs-react");
-            return headers;
-          },
-        }),
-      ],
-    }),
-  );
+  const [trpcClient] = useState(() => createApi());
 
   return (
     <QueryClientProvider client={queryClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         {props.children}
-      </api.Provider>
+      </TRPCProvider>
     </QueryClientProvider>
   );
 }

@@ -9,7 +9,7 @@ import { Header } from "~/app/components/Header";
 import Footer from "~/app/components/Footer";
 
 export const metadata: Metadata = {
-  title: "ExpenseThing",
+  title: "ExpenseMate",
   description: "Simple expense tracking app",
 };
 

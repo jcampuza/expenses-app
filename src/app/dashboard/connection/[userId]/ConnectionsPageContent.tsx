@@ -6,6 +6,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@radix-ui/react-dialog";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { SkeletonCard } from "~/app/components/SkeletonCard";
 import { Button } from "~/components/ui/button";
@@ -22,7 +23,7 @@ import { VisuallyHidden } from "~/components/ui/visually-hidden";
 import { CATEGORIES } from "~/lib/categories";
 import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
 import { PAYMENT_TYPE } from "~/server/db/schema";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/utils";
 
 const ConnectionsPageLoading = () => {
   return (
@@ -53,11 +54,11 @@ export function ConnectionsPageContainer({
   participantId: string;
 }) {
   const me = useUser();
-  const expensesQuery = api.expense.getExpenses.useQuery({
-    userId: participantId,
-  });
+  const trpc = useTRPC();
 
-  const utils = api.useUtils();
+  const expensesQuery = useQuery(
+    trpc.expense.getExpenses.queryOptions({ userId: participantId }),
+  );
 
   if (expensesQuery.isLoading || !me.isLoaded) {
     return <ConnectionsPageLoading />;
@@ -97,12 +98,7 @@ export function ConnectionsPageContainer({
             {getBalanceTitle()}
           </p>
         </div>
-        <AddExpenseDialog
-          participantId={participantId}
-          onSuccess={async () => {
-            await utils.expense.getExpenses.invalidate();
-          }}
-        />
+        <AddExpenseDialog participantId={participantId} />
       </div>
 
       <Separator className="my-4" />
@@ -114,11 +110,6 @@ export function ConnectionsPageContainer({
             key={expense.expense.id}
             participantId={participantId}
             expense={expense.expense}
-            onSuccess={async () => {
-              await utils.expense.getExpenses.invalidate({
-                userId: participantId,
-              });
-            }}
           />
         ))}
       </div>
@@ -130,15 +121,27 @@ export function ConnectionsPageContainer({
  * A dialog component that shows a form to add an expense.
  * Utilizes the custom Dialog components from "~/components/ui/dialog".
  */
-function AddExpenseDialog({
-  participantId,
-  onSuccess,
-}: {
-  participantId: string;
-  onSuccess: () => void;
-}) {
+function AddExpenseDialog({ participantId }: { participantId: string }) {
   const me = useUser();
-  const addExpenseMutation = api.expense.addExpense.useMutation();
+  const trpc = useTRPC();
+
+  const queryClient = useQueryClient();
+  const addExpenseMutation = useMutation(
+    trpc.expense.addExpense.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.refetchQueries(
+          trpc.expense.getExpenses.queryFilter({
+            userId: participantId,
+          }),
+        );
+
+        setName("");
+        setCategory("");
+        setTotalCost("");
+        setOpen(false);
+      },
+    }),
+  );
 
   const [name, setName] = useState("");
   const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(PAYMENT_TYPE[0]);
@@ -146,11 +149,9 @@ function AddExpenseDialog({
   const [totalCost, setTotalCost] = useState("");
   const [open, setOpen] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // If the paymentType is "paid_by_participant" then we should set the owner to the participant instead of us
-    // If the paymentType is anything else, its presumed we are paying for it and thus we own it
     if (!me.user) {
       throw new Error("Tried to add expense while no user is logged in");
     }
@@ -163,27 +164,18 @@ function AddExpenseDialog({
       return;
     }
 
-    try {
-      await addExpenseMutation.mutateAsync({
-        participant: {
-          participantId: participantId,
-          paymentType: paymentType,
-        },
-        expense: {
-          name,
-          totalCost: cost,
-          category,
-          ownerId: currentUserId,
-        },
-      });
-      setName("");
-      setCategory("");
-      setTotalCost("");
-      setOpen(false);
-      onSuccess();
-    } catch (error) {
-      console.error("Error adding expense", error);
-    }
+    addExpenseMutation.mutate({
+      participant: {
+        participantId: participantId,
+        paymentType: paymentType,
+      },
+      expense: {
+        name,
+        totalCost: cost,
+        category,
+        ownerId: currentUserId,
+      },
+    });
   };
 
   return (
@@ -307,7 +299,6 @@ function AddExpenseDialog({
 function EditExpenseDialog({
   participantId,
   expense,
-  onSuccess,
 }: {
   participantId: string;
   expense: {
@@ -318,10 +309,37 @@ function EditExpenseDialog({
     totalCost: number;
     ownerId: string;
   };
-  onSuccess: () => void;
 }) {
-  const updateExpenseMutation = api.expense.updateExpense.useMutation();
-  const deleteExpenseMutation = api.expense.deleteExpense.useMutation();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  const updateExpenseMutation = useMutation(
+    trpc.expense.updateExpense.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.refetchQueries(
+          trpc.expense.getExpenses.queryFilter({
+            userId: participantId,
+          }),
+        );
+
+        setOpen(false);
+      },
+    }),
+  );
+
+  const deleteExpenseMutation = useMutation(
+    trpc.expense.deleteExpense.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.refetchQueries(
+          trpc.expense.getExpenses.queryFilter({
+            userId: participantId,
+          }),
+        );
+
+        setOpen(false);
+      },
+    }),
+  );
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(expense.name);
   const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(PAYMENT_TYPE[0]);
@@ -336,7 +354,7 @@ function EditExpenseDialog({
     return `You paid ${formatDollars(expense.totalCost)}`;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const cost = parseFloat(totalCost);
@@ -345,39 +363,27 @@ function EditExpenseDialog({
       return;
     }
 
-    try {
-      await updateExpenseMutation.mutateAsync({
-        user: { id: participantId },
-        participant: {
-          paymentType: paymentType,
-        },
-        expense: {
-          id: expense.id,
-          name,
-          category,
-          totalCost: cost,
-        },
-      });
-      setOpen(false);
-      onSuccess();
-    } catch (error) {
-      console.error("Error updating expense", error);
-    }
+    updateExpenseMutation.mutate({
+      user: { id: participantId },
+      participant: {
+        paymentType: paymentType,
+      },
+      expense: {
+        id: expense.id,
+        name,
+        category,
+        totalCost: cost,
+      },
+    });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this expense?",
     );
     if (!confirmed) return;
 
-    try {
-      await deleteExpenseMutation.mutateAsync({ id: expense.id });
-      setOpen(false);
-      onSuccess();
-    } catch (error) {
-      console.error("Error deleting expense", error);
-    }
+    deleteExpenseMutation.mutate({ id: expense.id });
   };
 
   const actionIsInProgress =

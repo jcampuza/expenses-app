@@ -2,6 +2,7 @@ import { SignInButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { Button } from "~/components/ui/button";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -28,7 +29,9 @@ export default async function Home() {
           Stay on top of your spending and reach your financial goals.
         </p>
 
-        <SignInButton />
+        <SignInButton>
+          <Button variant={"default"}>Sign up now</Button>
+        </SignInButton>
       </main>
     </div>
   );
