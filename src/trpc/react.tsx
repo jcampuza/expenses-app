@@ -1,7 +1,11 @@
 "use client";
 
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { loggerLink, unstable_httpBatchStreamLink } from "@trpc/client";
+import {
+  loggerLink,
+  TRPCClientError,
+  unstable_httpBatchStreamLink,
+} from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
@@ -14,14 +18,54 @@ let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
   if (typeof window === "undefined") {
     // Server: always make a new query client
-    return createQueryClient();
+    const serverQueryClient = createQueryClient();
+    serverQueryClient.setDefaultOptions({
+      queries: {
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        staleTime: 1000 * 60,
+      },
+    });
+
+    return serverQueryClient;
   }
   // Browser: use singleton pattern to keep the same query client
-  return (clientQueryClientSingleton ??= createQueryClient());
+  if (clientQueryClientSingleton) {
+    return clientQueryClientSingleton;
+  }
+
+  clientQueryClientSingleton = createQueryClient();
+  clientQueryClientSingleton.setDefaultOptions({
+    queries: {
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      staleTime: 1000 * 60,
+      retry: (failureCount, error) => {
+        if (!(error instanceof TRPCClientError)) {
+          return false;
+        }
+
+        // Do not retry the request if it doesn't fit into one of these. It doesn't make sense.
+        const retryableCodes = new Set([
+          "BAD_REQUEST",
+          "TIMEOUT",
+          "INTERNAL_SERVER_ERROR",
+          "TOO_MANY_REQUESTS",
+        ]);
+
+        if (!retryableCodes.has(error.data.code)) {
+          return false;
+        }
+
+        return failureCount < 3;
+      },
+    },
+  });
+
+  return clientQueryClientSingleton;
 };
 
 export const api = createTRPCReact<AppRouter>();
-
 /**
  * Inference helper for inputs.
  *
@@ -57,7 +101,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
           },
         }),
       ],
-    })
+    }),
   );
 
   return (

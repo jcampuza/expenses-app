@@ -1,12 +1,17 @@
-import { Suspense } from "react";
+import { auth } from "@clerk/nextjs/server";
 import SettingsForm from "./settings-form";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const { userId, redirectToSignIn } = await auth();
+  if (!userId) {
+    return redirectToSignIn();
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container p-4">
       <div className="mb-6">
         <Button asChild variant="ghost" className="hover:bg-transparent">
           <Link href="/dashboard" className="flex items-center text-primary">
@@ -17,9 +22,7 @@ export default function SettingsPage() {
       </div>
 
       <h1 className="mb-6 text-2xl font-bold">Account Settings</h1>
-      <Suspense fallback={<div>Loading...</div>}>
-        <SettingsForm />
-      </Suspense>
+      <SettingsForm />
     </div>
   );
 }

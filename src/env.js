@@ -2,16 +2,14 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const env = createEnv({
-  /**
-   * Specify your server-side environment variables schema here. This way you can ensure the app
-   * isn't built with invalid env vars.
-   */
   server: {
-    AUTH_SECRET:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
-    DATABASE_URL: z.string().url(),
+    // Postgres
+    POSTGRES_URL: z.string().url(),
+
+    // Clerk
+    CLERK_SECRET_KEY: z.string().min(1),
+
+    // Next.js specific
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -23,7 +21,11 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    // Clerk
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
+
+    // Next.js specific
+    NEXT_PUBLIC_BASE_URL: z.string(),
   },
 
   /**
@@ -31,8 +33,16 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    AUTH_SECRET: process.env.AUTH_SECRET,
-    DATABASE_URL: process.env.DATABASE_URL,
+    // Postgres
+    POSTGRES_URL: process.env.POSTGRES_URL,
+
+    // Clerk
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+
+    // Next.js specific
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },
   /**

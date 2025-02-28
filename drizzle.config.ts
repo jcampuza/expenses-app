@@ -4,9 +4,9 @@ import { env } from "~/env";
 
 export default {
   schema: "./src/server/db/schema.ts",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: env.DATABASE_URL,
+    url: env.POSTGRES_URL,
+    ssl: env.NODE_ENV === "production" ? "require" : false,
   },
-  tablesFilter: ["t3-app@latest_*"],
 } satisfies Config;
