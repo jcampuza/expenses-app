@@ -23,9 +23,6 @@ export const env = createEnv({
   client: {
     // Clerk
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
-
-    // Next.js specific
-    NEXT_PUBLIC_BASE_URL: z.string(),
   },
 
   /**
@@ -41,8 +38,6 @@ export const env = createEnv({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
 
-    // Next.js specific
-    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },
   /**

@@ -127,7 +127,7 @@ function GenerateInvitationDialog({ user }: { user: UserResource }) {
       setState({
         status: "ready",
         data: svg,
-        invitationLink: invitationLink,
+        invitationLink: `${window.location.hostname}${invitationLink}`,
       });
     } catch {
       setState({ status: "idle", data: null, invitationLink: null });

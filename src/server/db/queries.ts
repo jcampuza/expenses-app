@@ -357,7 +357,7 @@ export const createInvitationLink = async (db: DB, inviterUserId: string) => {
     createdAt: new Date().toISOString(),
   });
 
-  const invitationLink = `${process.env.NEXT_PUBLIC_BASE_URL}/invite/${token}`;
+  const invitationLink = `/invite/${token}`;
 
   return invitationLink;
 };
