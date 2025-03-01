@@ -1,5 +1,3 @@
 {
-  "build": {
-    "command": "bun run migrate-and-build"
-  }
+  "buildCommand": "next build"
 }
