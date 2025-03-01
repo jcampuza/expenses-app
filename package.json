@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "migrate-and-build": "drizzle-kit migrate:up && next build",
+    "migrate-and-build": "drizzle-kit migrate && next build",
     "check": "next lint && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
