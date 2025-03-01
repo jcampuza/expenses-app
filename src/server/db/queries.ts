@@ -1,4 +1,4 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { type DB } from "~/server/db";
 import {
@@ -399,4 +399,20 @@ export const deleteExpense = async (db: DB, id: number) => {
   });
 
   return res;
+};
+
+export const deleteExpiredInvitations = async (db: DB) => {
+  const invitationsToDelete = await db
+    .select()
+    .from(invitations)
+    .where(lt(invitations.expirationTime, new Date().toISOString()));
+
+  await db.transaction(async (trx) => {
+    await trx.delete(invitations).where(
+      inArray(
+        invitations.token,
+        invitationsToDelete.map((i) => i.token),
+      ),
+    );
+  });
 };

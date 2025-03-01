@@ -3,6 +3,8 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
+    CRON_SECRET: z.string().min(1),
+
     // Postgres
     POSTGRES_URL: z.string().url(),
 
@@ -30,6 +32,8 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    CRON_SECRET: process.env.CRON_SECRET,
+
     // Postgres
     POSTGRES_URL: process.env.POSTGRES_URL,
 

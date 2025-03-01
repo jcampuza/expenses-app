@@ -1,3 +1,10 @@
 {
-  "buildCommand": "bun run migrate-and-build"
+  "buildCommand": "bun run migrate-and-build",
+
+  "crons": [
+    {
+      "path": "/api/cron/delete-expired-invitations",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }
