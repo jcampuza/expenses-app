@@ -57,7 +57,13 @@ export function ConnectionsPageContainer({
   const trpc = useTRPC();
 
   const expensesQuery = useQuery(
-    trpc.expense.getExpenses.queryOptions({ userId: participantId }),
+    trpc.expense.getExpenses.queryOptions(
+      { userId: participantId },
+      {
+        refetchInterval: 1000 * 60 * 5,
+        refetchIntervalInBackground: false,
+      },
+    ),
   );
 
   if (expensesQuery.isLoading || !me.isLoaded) {
@@ -82,7 +88,15 @@ export function ConnectionsPageContainer({
   };
 
   return (
-    <div className="p-4">
+    <div className="flex-1 p-4">
+      {expensesQuery.isFetching && (
+        <div className="absolute bottom-0 z-10 flex w-full items-center justify-center bg-background/80 py-4 backdrop-blur-sm">
+          <div className="flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs">
+            <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            <span className="text-primary">Updating...</span>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,8 +105,10 @@ export function ConnectionsPageContainer({
           </h1>
           <p
             className={cn(
-              expensesQuery.data.totalBalance > 0 && "text-red-500",
-              expensesQuery.data.totalBalance < 0 && "text-green-500",
+              expensesQuery.data.totalBalance > 0 &&
+                "text-red-600 dark:bg-red-900/30",
+              expensesQuery.data.totalBalance < 0 &&
+                "text-green-600 dark:bg-green-900/30",
             )}
           >
             {getBalanceTitle()}
@@ -102,6 +118,8 @@ export function ConnectionsPageContainer({
       </div>
 
       <Separator className="my-4" />
+
+      {/* Loading indicator */}
 
       {/* Expenses List */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -129,11 +147,12 @@ function AddExpenseDialog({ participantId }: { participantId: string }) {
   const addExpenseMutation = useMutation(
     trpc.expense.addExpense.mutationOptions({
       onSuccess: async () => {
-        await queryClient.refetchQueries(
+        queryClient.invalidateQueries(
           trpc.expense.getExpenses.queryFilter({
             userId: participantId,
           }),
         );
+        queryClient.invalidateQueries(trpc.expense.getExpenses);
 
         setName("");
         setCategory("");
@@ -316,11 +335,13 @@ function EditExpenseDialog({
   const updateExpenseMutation = useMutation(
     trpc.expense.updateExpense.mutationOptions({
       onSuccess: async () => {
-        await queryClient.refetchQueries(
+        queryClient.invalidateQueries(
           trpc.expense.getExpenses.queryFilter({
             userId: participantId,
           }),
         );
+
+        queryClient.invalidateQueries(trpc.expense.getExpenses);
 
         setOpen(false);
       },
@@ -330,11 +351,12 @@ function EditExpenseDialog({
   const deleteExpenseMutation = useMutation(
     trpc.expense.deleteExpense.mutationOptions({
       onSuccess: async () => {
-        await queryClient.refetchQueries(
+        queryClient.invalidateQueries(
           trpc.expense.getExpenses.queryFilter({
             userId: participantId,
           }),
         );
+        queryClient.invalidateQueries(trpc.expense.getExpenses);
 
         setOpen(false);
       },

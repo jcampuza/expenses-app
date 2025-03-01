@@ -7,6 +7,5 @@ export default async function ConnectionPage({
 }) {
   const { userId } = await params;
 
-  console.log("rerendering");
   return <ConnectionsPageContainer participantId={userId} />;
 }

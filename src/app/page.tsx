@@ -25,8 +25,9 @@ export default async function Home() {
           Track Your Expenses with Ease
         </h1>
         <p className="mb-6 max-w-md text-muted-foreground">
-          Simplify your financial life with our intuitive expense tracking app.
-          Stay on top of your spending and reach your financial goals.
+          ExpenseMate helps you split bills, track shared expenses, and settle
+          debts with friends and roommates. Stay organized and eliminate awkward
+          money conversations.
         </p>
 
         <SignInButton>

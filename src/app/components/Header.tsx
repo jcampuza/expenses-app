@@ -1,10 +1,4 @@
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -14,10 +8,7 @@ export function Header() {
   return (
     <header className="flex items-center justify-between bg-accent p-4">
       <div className="flex items-center gap-2">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-black"
-        >
+        <Link href="/" className="inline-flex items-center gap-2 text-black">
           <Image
             src="/logo.png"
             alt="Expenses App Logo"
@@ -36,10 +27,6 @@ export function Header() {
           <SignInButton>
             <Button variant={"link"}>Sign in</Button>
           </SignInButton>
-
-          <SignUpButton>
-            <Button variant={"link"}>Sign out</Button>
-          </SignUpButton>
         </SignedOut>
 
         <SignedIn>

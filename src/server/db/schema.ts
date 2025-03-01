@@ -18,7 +18,7 @@ export const expenses = pgTable("expenses", {
   totalCost: real("total_cost").notNull(),
   currency: text("currency").default("USD").notNull(),
   ownerId: text("owner_id").notNull(),
-});
+}).enableRLS();
 
 export const PaymentTypes = {
   paid_by_owner_split_equally: "paid_by_owner_split_equally",
@@ -46,7 +46,7 @@ export const expenseParticipants = pgTable("expense_participants", {
     .references(() => expenses.id),
   participantId: text("participant_id").notNull(),
   paymentType: PaymentType("payment_type").notNull(),
-});
+}).enableRLS();
 
 // Relations
 export const expensesRelations = relations(expenses, ({ many }) => ({
@@ -69,7 +69,7 @@ export const invitations = pgTable("invitations", {
   expirationTime: text("expiration_time").notNull(), // ISO string
   isUsed: boolean("is_used").default(false).notNull(),
   createdAt: text("created_at").notNull(), // ISO string
-});
+}).enableRLS();
 
 // New table to store connections between users.
 // Whenever an invitation is accepted, you'll insert a record here that
@@ -79,4 +79,4 @@ export const userConnections = pgTable("user_connections", {
   inviterUserId: text("inviter_user_id").notNull(), // User who sent the invitation
   inviteeUserId: text("invitee_user_id").notNull(), // User who accepted the invitation
   acceptedAt: timestamp("accepted_at").notNull().defaultNow(), // Optional: timestamp (ISO string) when the connection was established
-});
+}).enableRLS();

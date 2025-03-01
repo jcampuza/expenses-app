@@ -347,7 +347,7 @@ export const acceptInvitation = async (
 export const createInvitationLink = async (db: DB, inviterUserId: string) => {
   const token = crypto.randomUUID();
 
-  const expirationTime = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+  const expirationTime = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
   await db.insert(invitations).values({
     token,

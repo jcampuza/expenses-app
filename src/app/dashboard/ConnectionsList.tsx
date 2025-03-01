@@ -4,8 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { buttonVariants } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
-import { getBalanceTitle } from "~/lib/utils";
+import { formatDollars } from "~/lib/utils";
 import { useTRPC } from "~/trpc/utils";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CheckCircle,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 
 export function ConnectionsList() {
   const trpc = useTRPC();
@@ -15,44 +22,89 @@ export function ConnectionsList() {
 
   if (connectionsQuery.isLoading) {
     return (
-      <div className="space-y-2">
-        <Skeleton className="h-6 w-1/3" />
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-full" />
+      <div className="space-y-4">
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
       </div>
     );
   }
 
   if (connectionsQuery.data?.users.length === 0) {
     return (
-      <>
-        <p className="mb-4">
-          Welcome to your dashboard! Here you can manage your expenses and track
-          your spending.
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+        <h2 className="mb-4 text-xl font-semibold">
+          Welcome to Your Dashboard!
+        </h2>
+        <p className="mb-4 text-gray-600 dark:text-gray-400">
+          Here you can manage your expenses and track your spending with friends
+          and family.
         </p>
-        <p className="mb-4">
+        <p className="mb-6 text-gray-600 dark:text-gray-400">
           Start sharing your expenses by going to your settings and sharing a
           verification code.
         </p>
 
         <Link
           href="/settings"
-          className={buttonVariants({ variant: "default" })}
+          className={
+            buttonVariants({ variant: "default", size: "lg" }) +
+            " group flex items-center gap-2"
+          }
         >
-          Click here to get started
+          Get Started
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
-      </>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <ul>
+    <div className="space-y-4">
+      <h2 className="mb-4 text-xl font-semibold">Your Connections</h2>
+      <ul className="space-y-3">
         {connectionsQuery.data?.users.map((user) => (
           <li key={user.userId}>
-            <Link href={`/dashboard/connection/${user.userId}`}>
-              {getBalanceTitle(user.totalBalance, user.name)}
+            <Link
+              href={`/dashboard/connection/${user.userId}`}
+              className="block transform rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md dark:border-gray-800 dark:bg-gray-950"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {user.totalBalance > 0 ? (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
+                      <TrendingDown className="h-5 w-5" />
+                    </div>
+                  ) : user.totalBalance < 0 ? (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800">
+                      <CheckCircle className="h-5 w-5" />
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="font-medium">{user.name}</h3>
+                    {user.totalBalance > 0 ? (
+                      <p className="text-sm text-red-600 dark:text-green-400">
+                        You owe {formatDollars(Math.abs(user.totalBalance))}
+                      </p>
+                    ) : user.totalBalance < 0 ? (
+                      <p className="text-sm text-green-600 dark:text-red-400">
+                        Owes you {formatDollars(Math.abs(user.totalBalance))}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        All debts settled
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <ArrowUpRight className="h-5 w-5 text-gray-400" />
+              </div>
             </Link>
           </li>
         ))}

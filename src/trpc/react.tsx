@@ -23,6 +23,7 @@ const getQueryClient = () => {
     browserQueryClient = createQueryClient();
     browserQueryClient.setDefaultOptions({
       queries: {
+        staleTime: 1000,
         retry: (failureCount, error) => {
           if (!(error instanceof TRPCClientError)) {
             return false;
