@@ -7,7 +7,8 @@ import {
   DialogTitle,
 } from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import Fuse from "fuse.js";
+import { useMemo, useState } from "react";
 import { SkeletonCard } from "~/app/components/SkeletonCard";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -17,10 +18,11 @@ import {
   DialogHeader,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { VisuallyHidden } from "~/components/ui/visually-hidden";
-import { CATEGORIES } from "~/lib/categories";
+import { CATEGORIES, CATEGORY } from "~/lib/categories";
 import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
 import { PAYMENT_TYPE } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
@@ -66,6 +68,23 @@ export function ConnectionsPageContainer({
     ),
   );
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const fuseSearch = useMemo(() => {
+    return new Fuse(expensesQuery.data?.items ?? [], {
+      keys: ["expense.name", "expense.totalCost"],
+      threshold: 0.3,
+    });
+  }, [expensesQuery.data?.items]);
+
+  const searchItemsResponse = useMemo(() => {
+    if (searchTerm) {
+      return fuseSearch.search(searchTerm).map((item) => item.item);
+    }
+
+    return expensesQuery.data?.items ?? [];
+  }, [searchTerm, expensesQuery.data?.items, fuseSearch]);
+
   if (expensesQuery.isLoading || !me.isLoaded) {
     return <ConnectionsPageLoading />;
   }
@@ -89,9 +108,9 @@ export function ConnectionsPageContainer({
 
   return (
     <div className="flex-1 p-4">
-      {expensesQuery.isFetching && (
-        <div className="absolute bottom-0 z-10 flex w-full items-center justify-center bg-background/80 py-4 backdrop-blur-sm">
-          <div className="flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs">
+      {!expensesQuery.isFetching && (
+        <div className="absolute bottom-4 right-4 z-10 mx-auto flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex items-center rounded-full bg-primary/10 px-4 py-2 text-xs">
             <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             <span className="text-primary">Updating...</span>
           </div>
@@ -105,6 +124,7 @@ export function ConnectionsPageContainer({
           </h1>
           <p
             className={cn(
+              "mb-4",
               expensesQuery.data.totalBalance > 0 &&
                 "text-red-600 dark:bg-red-900/30",
               expensesQuery.data.totalBalance < 0 &&
@@ -113,8 +133,18 @@ export function ConnectionsPageContainer({
           >
             {getBalanceTitle()}
           </p>
+          <div>
+            <Input
+              type="text"
+              value={searchTerm}
+              placeholder="Search..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
-        <AddExpenseDialog participantId={participantId} />
+        <div>
+          <AddExpenseDialog participantId={participantId} />
+        </div>
       </div>
 
       <Separator className="my-4" />
@@ -123,13 +153,17 @@ export function ConnectionsPageContainer({
 
       {/* Expenses List */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {expensesQuery.data.items.map((expense) => (
-          <EditExpenseDialog
-            key={expense.expense.id}
-            participantId={participantId}
-            expense={expense.expense}
-          />
-        ))}
+        {searchItemsResponse.map((searchResult) => {
+          const expense = searchResult;
+
+          return (
+            <EditExpenseDialog
+              key={expense.expense.id}
+              participantId={participantId}
+              expense={expense.expense}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -164,7 +198,7 @@ function AddExpenseDialog({ participantId }: { participantId: string }) {
 
   const [name, setName] = useState("");
   const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(PAYMENT_TYPE[0]);
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(CATEGORY.None);
   const [totalCost, setTotalCost] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -243,9 +277,6 @@ function AddExpenseDialog({ participantId }: { participantId: string }) {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              <option value="" disabled>
-                Select a category
-              </option>
               {CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {category}
