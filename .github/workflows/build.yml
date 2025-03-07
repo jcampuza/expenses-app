@@ -19,9 +19,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.bun
-          key: ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lockb') }}
+          key: ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lockb') }}
+            ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lock') }}
 
       - name: Install Bun (System Path)
         uses: oven-sh/setup-bun@v2
