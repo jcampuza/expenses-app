@@ -31,7 +31,7 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Run Build
+      - name: Run Linting And TS checks
         run: bun run check
         env:
           NODE_ENV: production
