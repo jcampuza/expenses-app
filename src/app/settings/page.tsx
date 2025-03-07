@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import SettingsForm from "./settings-form";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { Button } from "~/components/ui/button";
+import { AppLink } from "~/components/ui/app-link";
 
 export default async function SettingsPage() {
   const { userId, redirectToSignIn } = await auth();
@@ -14,10 +14,13 @@ export default async function SettingsPage() {
     <div className="container p-4">
       <div className="mb-6">
         <Button asChild variant="ghost" className="hover:bg-transparent">
-          <Link href="/dashboard" className="flex items-center text-primary">
+          <AppLink
+            href="/dashboard"
+            className="inline-flex items-center text-primary"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
-          </Link>
+          </AppLink>
         </Button>
       </div>
 
