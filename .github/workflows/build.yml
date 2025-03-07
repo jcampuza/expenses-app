@@ -2,9 +2,9 @@ name: Build Validation
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   build:
@@ -24,7 +24,9 @@ jobs:
             ${{ runner.os }}-bun-deps-
 
       - name: Install Bun (System Path)
-        run: curl -fsSL https://bun.sh/install | bash # Installs to /usr/local/bin/bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Install Dependencies
         run: bun install
