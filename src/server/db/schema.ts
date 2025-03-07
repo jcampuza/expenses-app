@@ -27,17 +27,17 @@ export const PaymentTypes = {
   paid_by_participant_owner_owes: "paid_by_participant_owner_owes",
 } as const;
 
-export const PAYMENT_TYPE = [
+export const PAYMENT_TYPE_LIST = [
   PaymentTypes.paid_by_owner_split_equally,
   PaymentTypes.paid_by_owner_participant_owes,
   PaymentTypes.paid_by_participant_split_equally,
   PaymentTypes.paid_by_participant_owner_owes,
 ] as const;
 
-export type PAYMENT_TYPE = (typeof PAYMENT_TYPE)[number];
+export type PAYMENT_TYPE = (typeof PAYMENT_TYPE_LIST)[number];
 
 // Simplified payment type enum
-export const PaymentType = pgEnum("payment_type", PAYMENT_TYPE);
+export const PaymentType = pgEnum("payment_type", PAYMENT_TYPE_LIST);
 
 export const expenseParticipants = pgTable("expense_participants", {
   id: serial("id").primaryKey(),

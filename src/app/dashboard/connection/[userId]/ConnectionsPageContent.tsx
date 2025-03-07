@@ -24,7 +24,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { VisuallyHidden } from "~/components/ui/visually-hidden";
 import { CATEGORIES, CATEGORY } from "~/lib/categories";
 import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
-import { PAYMENT_TYPE } from "~/server/db/schema";
+import { PAYMENT_TYPE, PAYMENT_TYPE_LIST } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
 
 const ConnectionsPageLoading = () => {
@@ -72,7 +72,7 @@ export function ConnectionsPageContainer({
 
   const fuseSearch = useMemo(() => {
     return new Fuse(expensesQuery.data?.items ?? [], {
-      keys: ["expense.name", "expense.totalCost"],
+      keys: ["expense.name", "expense.category"],
       threshold: 0.3,
     });
   }, [expensesQuery.data?.items]);
@@ -108,7 +108,7 @@ export function ConnectionsPageContainer({
 
   return (
     <div className="flex-1 p-4">
-      {!expensesQuery.isFetching && (
+      {expensesQuery.isFetching && (
         <div className="absolute bottom-4 right-4 z-10 mx-auto flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex items-center rounded-full bg-primary/10 px-4 py-2 text-xs">
             <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -143,7 +143,7 @@ export function ConnectionsPageContainer({
           </div>
         </div>
         <div>
-          <AddExpenseDialog participantId={participantId} />
+          <AddExpenseDialogButton participantId={participantId} />
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export function ConnectionsPageContainer({
           const expense = searchResult;
 
           return (
-            <EditExpenseDialog
+            <EditExpenseDialogButton
               key={expense.expense.id}
               participantId={participantId}
               expense={expense.expense}
@@ -173,7 +173,7 @@ export function ConnectionsPageContainer({
  * A dialog component that shows a form to add an expense.
  * Utilizes the custom Dialog components from "~/components/ui/dialog".
  */
-function AddExpenseDialog({ participantId }: { participantId: string }) {
+function AddExpenseDialogButton({ participantId }: { participantId: string }) {
   const me = useUser();
   const trpc = useTRPC();
 
@@ -189,7 +189,7 @@ function AddExpenseDialog({ participantId }: { participantId: string }) {
         queryClient.invalidateQueries(trpc.expense.getExpenses);
 
         setName("");
-        setCategory("");
+        setCategory(CATEGORY.None);
         setTotalCost("");
         setOpen(false);
       },
@@ -197,7 +197,9 @@ function AddExpenseDialog({ participantId }: { participantId: string }) {
   );
 
   const [name, setName] = useState("");
-  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(PAYMENT_TYPE[0]);
+  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(
+    PAYMENT_TYPE_LIST[0],
+  );
   const [category, setCategory] = useState(CATEGORY.None);
   const [totalCost, setTotalCost] = useState("");
   const [open, setOpen] = useState(false);
@@ -346,7 +348,7 @@ function AddExpenseDialog({ participantId }: { participantId: string }) {
  * A dialog component that shows a form to edit an expense.
  * Clicking on an expense card opens this dialog.
  */
-function EditExpenseDialog({
+function EditExpenseDialogButton({
   participantId,
   expense,
 }: {
@@ -395,7 +397,9 @@ function EditExpenseDialog({
   );
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(expense.name);
-  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(PAYMENT_TYPE[0]);
+  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(
+    PAYMENT_TYPE_LIST[0],
+  );
   const [category, setCategory] = useState(expense.category);
   const [totalCost, setTotalCost] = useState(expense.totalCost.toString());
 
