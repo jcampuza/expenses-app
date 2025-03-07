@@ -9,7 +9,7 @@ const AppLink = React.forwardRef<
 >(({ className, ...props }, ref) => {
   return (
     <NextLink
-      className={cn(buttonVariants({ variant: "link" }), className)}
+      className={cn(buttonVariants({ variant: "link" }), className, "px-0")}
       ref={ref}
       {...props}
     />
