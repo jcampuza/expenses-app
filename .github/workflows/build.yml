@@ -21,7 +21,7 @@ jobs:
           path: ~/.bun
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lockb') }}
           restore-keys: |
-            ${{ runner.os }}-bun-deps-
+            ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lockb') }}
 
       - name: Install Bun (System Path)
         uses: oven-sh/setup-bun@v2
