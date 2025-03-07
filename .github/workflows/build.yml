@@ -1,0 +1,35 @@
+name: Build Validation
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || github.head_ref || github.ref }}
+
+      - name: Cache Bun Dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.bun
+          key: ${{ runner.os }}-bun-deps-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-deps-
+
+      - name: Install Bun (System Path)
+        run: curl -fsSL https://bun.sh/install | bash # Installs to /usr/local/bin/bun
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Run Build
+        run: bun run build
+        env:
+          NODE_ENV: production
