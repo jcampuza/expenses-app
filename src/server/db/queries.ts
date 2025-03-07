@@ -42,7 +42,7 @@ export const getUsersSharedExpenses = async (
       participant: expenseParticipants,
     })
     .from(expenses)
-    .leftJoin(
+    .innerJoin(
       expenseParticipants,
       eq(expenses.id, expenseParticipants.expenseId),
     )
@@ -155,6 +155,7 @@ export const AddExpenseSchema = z.object({
     totalCost: z.number(),
     category: z.string().optional(),
     ownerId: z.string(),
+    date: z.date().optional(),
   }),
 });
 
@@ -171,6 +172,7 @@ export const addExpense = async (
         category: expense.category,
         totalCost: expense.totalCost,
         ownerId: expense.ownerId,
+        date: expense.date,
       })
       .returning();
 
@@ -190,6 +192,72 @@ export const addExpense = async (
     return {
       expense: expenseInsertResult,
       participant: participantInsertResult,
+    };
+  });
+
+  return res;
+};
+
+export const AddMultipleExpensesSchema = z.object({
+  data: z.array(AddExpenseSchema),
+});
+
+export const addMultipleExpenses = async (
+  db: DB,
+  value: z.infer<typeof AddMultipleExpensesSchema>,
+) => {
+  const { data } = value;
+
+  const res = await db.transaction(async (trx) => {
+    // Prepare expense values for bulk insert
+    const expenseValues = data.map((item) => ({
+      name: item.expense.name,
+      category: item.expense.category,
+      totalCost: item.expense.totalCost,
+      ownerId: item.expense.ownerId,
+      date: item.expense.date,
+    }));
+
+    // Insert all expenses and return their IDs
+    const expenseInsertResults = await trx
+      .insert(expenses)
+      .values(expenseValues)
+      .returning();
+
+    if (expenseInsertResults.length !== data.length) {
+      return trx.rollback();
+    }
+
+    // Prepare expenseParticipants values for bulk insert
+    const expenseParticipantValues = data
+      .map((item, index) => {
+        const expenseId = expenseInsertResults[index]?.id;
+
+        if (!expenseId) {
+          return null;
+        }
+
+        return {
+          expenseId,
+          participantId: item.participant.participantId,
+          paymentType: item.participant.paymentType,
+        };
+      })
+      .filter((v) => v !== null);
+
+    // Insert all expenseParticipants
+    const participantInsertResults = await trx
+      .insert(expenseParticipants)
+      .values(expenseParticipantValues)
+      .returning();
+
+    if (participantInsertResults.length !== expenseParticipantValues.length) {
+      return trx.rollback();
+    }
+
+    return {
+      expenses: expenseInsertResults,
+      participants: participantInsertResults,
     };
   });
 
