@@ -1,4 +1,4 @@
-import { ConnectionsPageContainer } from "~/app/dashboard/connection/[userId]/ConnectionsPageContent";
+import { ConnectionsPageContainer } from "~/app/(protected)/dashboard/connection/[userId]/ConnectionsPageContent";
 
 export default async function ConnectionPage({
   params,

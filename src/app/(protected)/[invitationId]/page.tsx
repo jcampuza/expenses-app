@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { InvitationContent } from "~/app/invite/[invitationId]/InvitationContent";
+import { InvitationContent } from "~/app/(protected)/[invitationId]/InvitationContent";
 
 export default async function InvitationPage({
   params,
