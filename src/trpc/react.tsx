@@ -10,17 +10,28 @@ import SuperJSON from "superjson";
 import { type AppRouter } from "~/server/api/root";
 import { createQueryClient } from "./query-client";
 import { TRPCProvider } from "~/trpc/utils";
+import { useClerk } from "@clerk/nextjs";
 
 let browserQueryClient: QueryClient | undefined = undefined;
-const getQueryClient = () => {
+const getQueryClient = ({
+  redirectToSignIn,
+}: {
+  redirectToSignIn: () => void;
+}) => {
   // SSR
   if (typeof window === "undefined") {
-    return createQueryClient();
+    return createQueryClient({
+      // Noop for the server, client will handle it
+      onUnauthorizedError: () => {},
+    });
   }
 
   // Client
   if (!browserQueryClient) {
-    browserQueryClient = createQueryClient();
+    browserQueryClient = createQueryClient({
+      onUnauthorizedError: redirectToSignIn,
+    });
+
     browserQueryClient.setDefaultOptions({
       queries: {
         staleTime: 1000,
@@ -80,7 +91,11 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
-  const queryClient = getQueryClient();
+  const { redirectToSignIn } = useClerk();
+
+  const queryClient = getQueryClient({
+    redirectToSignIn,
+  });
 
   const [trpcClient] = useState(() => createApi());
 

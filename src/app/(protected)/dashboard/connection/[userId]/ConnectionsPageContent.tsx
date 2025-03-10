@@ -365,6 +365,14 @@ function EditExpenseDialogButton({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(expense.name);
+  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(
+    PAYMENT_TYPE_LIST[0],
+  );
+  const [category, setCategory] = useState(expense.category);
+  const [totalCost, setTotalCost] = useState(expense.totalCost.toString());
+
   const updateExpenseMutation = useMutation(
     trpc.expense.updateExpense.mutationOptions({
       onSuccess: async () => {
@@ -395,13 +403,6 @@ function EditExpenseDialogButton({
       },
     }),
   );
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState(expense.name);
-  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(
-    PAYMENT_TYPE_LIST[0],
-  );
-  const [category, setCategory] = useState(expense.category);
-  const [totalCost, setTotalCost] = useState(expense.totalCost.toString());
 
   const getWhoPaidByOwnerId = () => {
     if (expense.ownerId === participantId) {
@@ -452,13 +453,19 @@ function EditExpenseDialogButton({
         <Card className="cursor-pointer hover:bg-background">
           <CardHeader>
             <CardTitle className="text-lg font-medium">
-              <div className="">{expense.name}</div>
+              <div className="flex gap-4 align-top">
+                <div className="flex-1">{expense.name}</div>
+                <div className="flex-shrink-0 text-sm text-muted-foreground">
+                  Date: {new Date(expense.date).toLocaleDateString()}
+                </div>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">
-              Date: {new Date(expense.date).toLocaleDateString()}
+            <div className="text-sm text-foreground">
+              Category: {expense.category}
             </div>
+
             <div className="text-sm">{getWhoPaidByOwnerId()}</div>
           </CardContent>
         </Card>

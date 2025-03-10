@@ -40,25 +40,12 @@ export const expensesRouter = createTRPCRouter({
         });
       }
 
-      const connection = await checkUsersConnection(
-        ctx.db,
-        ctx.session.userId,
-        input.userId,
-      );
-      if (!connection) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "User not found",
-        });
-      }
-
       // make sure the users are actually connected
       const userConnection = await checkUsersConnection(
         ctx.db,
         ctx.session.userId,
         input.userId,
       );
-
       if (!userConnection) {
         // Users are not connected
         throw new TRPCError({
@@ -66,6 +53,7 @@ export const expensesRouter = createTRPCRouter({
           message: "User not found",
         });
       }
+
       const otherUser = await ctx.clerkClient.users.getUser(input.userId);
       if (!otherUser) {
         throw new TRPCError({

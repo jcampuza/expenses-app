@@ -1,14 +1,24 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 
-export function Header() {
+export async function Header() {
+  const { userId } = await auth();
+
+  // The header should be dashboard for logged in users,
+  // and just continue to go home for anonymous users.
+  const headerLink = userId ? "/dashboard" : "/";
+
   return (
     <header className="flex items-center justify-between bg-accent p-4">
       <div className="flex items-center gap-2">
-        <Link href="/" className="inline-flex items-center gap-2 text-black">
+        <Link
+          href={headerLink}
+          className="inline-flex items-center gap-2 text-black"
+        >
           <Image
             src="/logo.png"
             alt="Expenses App Logo"

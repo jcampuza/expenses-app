@@ -1,4 +1,4 @@
-import { ConnectionsList } from "~/app/dashboard/ConnectionsList";
+import { ConnectionsList } from "~/app/(protected)/dashboard/ConnectionsList";
 
 export function DashboardContent() {
   return (
