@@ -8,6 +8,7 @@ import {
   pgEnum,
   boolean,
   timestamp,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const expenses = pgTable("expenses", {
@@ -80,3 +81,9 @@ export const userConnections = pgTable("user_connections", {
   inviteeUserId: text("invitee_user_id").notNull(), // User who accepted the invitation
   acceptedAt: timestamp("accepted_at").notNull().defaultNow(), // Optional: timestamp (ISO string) when the connection was established
 }).enableRLS();
+
+export const cache = pgTable("cache", {
+  key: text("key").primaryKey(), // Unique key for the cached item
+  value: jsonb("value").notNull(), // Cached value stored as JSON
+  expiresAt: timestamp("expires_at").notNull(), // Expiration time for the cache entry
+});

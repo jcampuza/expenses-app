@@ -116,6 +116,7 @@ export function ConnectionsPageContainer({
           </div>
         </div>
       )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -382,8 +383,6 @@ function EditExpenseDialogButton({
           }),
         );
 
-        queryClient.invalidateQueries(trpc.expense.getExpenses);
-
         setOpen(false);
       },
     }),
@@ -397,7 +396,6 @@ function EditExpenseDialogButton({
             userId: participantId,
           }),
         );
-        queryClient.invalidateQueries(trpc.expense.getExpenses);
 
         setOpen(false);
       },
@@ -450,7 +448,7 @@ function EditExpenseDialogButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:bg-background">
+        <Card className="cursor-pointer transition-[transform,shadow] hover:scale-[1.01] hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-lg font-medium">
               <div className="flex gap-4 align-top">

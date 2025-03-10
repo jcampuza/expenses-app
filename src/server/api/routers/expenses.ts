@@ -2,50 +2,36 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import {
-  addExpense,
   AddExpenseSchema,
   checkUsersConnection,
-  deleteExpense,
   getAllUserExpenses,
-  getUsersSharedExpenses,
-  updateExpense,
   UpdateExpenseSchema,
 } from "~/server/db/queries";
+import {
+  addExpenseUseCase,
+  deleteExpenseUseCase,
+  getUsersSharedExpensesUseCase,
+  updateExpenseUseCase,
+} from "~/server/use-cases/expenses";
+import { getUserUseCase } from "~/server/use-cases/user";
 
 export const expensesRouter = createTRPCRouter({
   getMyExpenses: protectedProcedure.query(async ({ ctx }) => {
-    // Ensure the user is authenticated
-    console.time("getMyExpenses");
-    if (!ctx.session?.userId) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "User not authenticated",
-      });
-    }
-
     const userExpenses = await getAllUserExpenses(ctx.db, ctx.session.userId);
 
-    console.timeEnd("getMyExpenses");
     return { expenses: userExpenses };
   }),
 
   getExpenses: protectedProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input, ctx }) => {
-      // Ensure the user is authenticated
-      if (!ctx.session?.userId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "User not authenticated",
-        });
-      }
-
       // make sure the users are actually connected
       const userConnection = await checkUsersConnection(
         ctx.db,
         ctx.session.userId,
         input.userId,
       );
+
       if (!userConnection) {
         // Users are not connected
         throw new TRPCError({
@@ -54,7 +40,11 @@ export const expensesRouter = createTRPCRouter({
         });
       }
 
-      const otherUser = await ctx.clerkClient.users.getUser(input.userId);
+      const otherUser = await getUserUseCase(input.userId, {
+        db: ctx.db,
+        clerkClient: ctx.clerkClient,
+      });
+
       if (!otherUser) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -62,10 +52,12 @@ export const expensesRouter = createTRPCRouter({
         });
       }
 
-      const sharedExpenses = await getUsersSharedExpenses(
-        ctx.db,
+      const sharedExpenses = await getUsersSharedExpensesUseCase(
         ctx.session.userId,
         input.userId,
+        {
+          db: ctx.db,
+        },
       );
 
       return {
@@ -86,7 +78,7 @@ export const expensesRouter = createTRPCRouter({
         });
       }
 
-      const res = await addExpense(ctx.db, input);
+      const res = await addExpenseUseCase(ctx.db, input);
 
       return { expense: res };
     }),
@@ -101,7 +93,7 @@ export const expensesRouter = createTRPCRouter({
         });
       }
 
-      const res = await updateExpense(ctx.db, input);
+      const res = await updateExpenseUseCase(ctx.db, input);
 
       return { expense: res };
     }),
@@ -116,7 +108,7 @@ export const expensesRouter = createTRPCRouter({
         });
       }
 
-      const res = await deleteExpense(ctx.db, input.id);
+      const res = await deleteExpenseUseCase(ctx.db, input.id);
 
       return { success: res };
     }),

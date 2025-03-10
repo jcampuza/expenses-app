@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { type DB } from "~/server/db";
 import {
+  cache,
   expenseParticipants,
   expenses,
   invitations,
@@ -14,19 +15,22 @@ export const checkUsersConnection = async (
   userIdA: string,
   userIdB: string,
 ) => {
-  const connection = await db.query.userConnections.findFirst({
-    where: (connections, { or, and, eq }) =>
+  const [connection] = await db
+    .select()
+    .from(userConnections)
+    .where(
       or(
         and(
-          eq(connections.inviterUserId, userIdA),
-          eq(connections.inviteeUserId, userIdB),
+          eq(userConnections.inviterUserId, userIdA),
+          eq(userConnections.inviteeUserId, userIdB),
         ),
         and(
-          eq(connections.inviterUserId, userIdB),
-          eq(connections.inviteeUserId, userIdA),
+          eq(userConnections.inviterUserId, userIdB),
+          eq(userConnections.inviteeUserId, userIdA),
         ),
       ),
-  });
+    )
+    .limit(1);
 
   return connection;
 };
@@ -483,4 +487,40 @@ export const deleteExpiredInvitations = async (db: DB) => {
       ),
     );
   });
+};
+
+export const readCache = async (db: DB, key: string) => {
+  const [cachedValue] = await db
+    .select()
+    .from(cache)
+    .where(and(eq(cache.key, key), gt(cache.expiresAt, new Date())))
+    .limit(1);
+
+  return cachedValue;
+};
+
+export const insertCache = async (
+  db: DB,
+  key: string,
+  value: unknown,
+  expiresAt: Date,
+) => {
+  await db
+    .insert(cache)
+    .values({
+      key,
+      value,
+      expiresAt,
+    })
+    .onConflictDoUpdate({
+      target: cache.key,
+      set: {
+        value,
+        expiresAt,
+      },
+    });
+};
+
+export const invalidateCache = async (db: DB, key: string) => {
+  await db.delete(cache).where(eq(cache.key, key));
 };

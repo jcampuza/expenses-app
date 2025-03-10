@@ -14,6 +14,41 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+const ConnectionsSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-24 w-full rounded-lg" />
+    <Skeleton className="h-24 w-full rounded-lg" />
+    <Skeleton className="h-24 w-full rounded-lg" />
+  </div>
+);
+
+const ConnectionsEmpty = () => {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+      <h2 className="mb-4 text-xl font-semibold">Welcome to Your Dashboard!</h2>
+      <p className="mb-4 text-gray-600 dark:text-gray-400">
+        Here you can manage your expenses and track your spending with friends
+        and family.
+      </p>
+      <p className="mb-6 text-gray-600 dark:text-gray-400">
+        Start sharing your expenses by going to your settings and sharing a
+        verification code.
+      </p>
+
+      <Link
+        href="/settings"
+        className={
+          buttonVariants({ variant: "default", size: "lg" }) +
+          " group flex items-center gap-2"
+        }
+      >
+        Get Started
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+      </Link>
+    </div>
+  );
+};
+
 export function ConnectionsList() {
   const trpc = useTRPC();
   const connectionsQuery = useQuery(
@@ -21,42 +56,11 @@ export function ConnectionsList() {
   );
 
   if (connectionsQuery.isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-24 w-full rounded-lg" />
-        <Skeleton className="h-24 w-full rounded-lg" />
-        <Skeleton className="h-24 w-full rounded-lg" />
-      </div>
-    );
+    return <ConnectionsSkeleton />;
   }
 
   if (connectionsQuery.data?.users.length === 0) {
-    return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-        <h2 className="mb-4 text-xl font-semibold">
-          Welcome to Your Dashboard!
-        </h2>
-        <p className="mb-4 text-gray-600 dark:text-gray-400">
-          Here you can manage your expenses and track your spending with friends
-          and family.
-        </p>
-        <p className="mb-6 text-gray-600 dark:text-gray-400">
-          Start sharing your expenses by going to your settings and sharing a
-          verification code.
-        </p>
-
-        <Link
-          href="/settings"
-          className={
-            buttonVariants({ variant: "default", size: "lg" }) +
-            " group flex items-center gap-2"
-          }
-        >
-          Get Started
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Link>
-      </div>
-    );
+    return <ConnectionsEmpty />;
   }
 
   return (

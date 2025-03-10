@@ -21,9 +21,10 @@ export async function Header() {
         >
           <Image
             src="/logo.png"
-            alt="Expenses App Logo"
             width={40}
             height={40}
+            quality={75}
+            alt="Expenses App Logo"
             className="rounded-full"
             priority
           ></Image>
