@@ -17,8 +17,9 @@ export default async function Home() {
         <Image
           src="/logo.png"
           alt="Expenses App Illustration"
-          width={200}
-          height={200}
+          width={150}
+          height={150}
+          quality={75}
           className="mb-6 rounded-full"
         />
         <h1 className="mb-4 text-3xl font-bold">
