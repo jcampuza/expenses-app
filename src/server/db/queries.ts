@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gt, inArray, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { type DB } from "~/server/db";
@@ -135,7 +136,7 @@ export const getAllUserExpenses = async (db: DB, userId: string) => {
   const allUserExpenses = await db
     .select()
     .from(expenses)
-    .leftJoin(
+    .innerJoin(
       expenseParticipants,
       eq(expenses.id, expenseParticipants.expenseId),
     )
@@ -294,18 +295,24 @@ export const updateExpense = async (
   const [existingExpense] = await db
     .select({ expense: expenses, participant: expenseParticipants })
     .from(expenses)
-    .leftJoin(
+    .innerJoin(
       expenseParticipants,
       eq(expenses.id, expenseParticipants.expenseId),
     )
     .where(eq(expenses.id, expense.id));
 
   if (!existingExpense) {
-    throw new Error("Expense not found");
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Expense not found",
+    });
   }
 
   if (!existingExpense.participant) {
-    throw new Error("Expense Participant not found");
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Expense Participant not found",
+    });
   }
 
   // Check if user is involved in the expense
@@ -313,7 +320,10 @@ export const updateExpense = async (
   const isParticipant = existingExpense.participant?.participantId === user.id;
 
   if (!isOwner && !isParticipant) {
-    throw new Error("Not authorized to update this expense");
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not authorized to update this expense",
+    });
   }
 
   const res = await db.transaction(async (trx) => {
