@@ -8,7 +8,7 @@ import {
 } from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { SkeletonCard } from "~/app/components/SkeletonCard";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -26,6 +26,57 @@ import { CATEGORIES, CATEGORY } from "~/lib/categories";
 import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
 import { PAYMENT_TYPE, PAYMENT_TYPE_LIST } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
+
+const getWhoPaidExpense = (
+  currentUserId: string,
+  ownerId: string,
+  participantUserId: string,
+  paymentType: PAYMENT_TYPE,
+  totalCost: number,
+) => {
+  // Current user is the owner
+  if (ownerId === currentUserId) {
+    switch (paymentType) {
+      case "paid_by_owner_split_equally": {
+        return `You paid ${formatDollars(totalCost)} split equally`;
+      }
+
+      case "paid_by_owner_participant_owes": {
+        return `You paid ${formatDollars(totalCost)} and they owe you`;
+      }
+
+      case "paid_by_participant_split_equally": {
+        return `They paid ${formatDollars(totalCost)} split equally`;
+      }
+
+      case "paid_by_participant_owner_owes": {
+        return `They paid ${formatDollars(totalCost)} and you owe them`;
+      }
+    }
+  }
+
+  // Current user is the participant
+  if (participantUserId === currentUserId) {
+    switch (paymentType) {
+      case "paid_by_owner_split_equally": {
+        return `They paid ${formatDollars(totalCost)} split equally`;
+      }
+      case "paid_by_owner_participant_owes": {
+        return `They paid ${formatDollars(totalCost)} and you owe them`;
+      }
+
+      case "paid_by_participant_split_equally": {
+        return `You paid ${formatDollars(totalCost)} split equally`;
+      }
+
+      case "paid_by_participant_owner_owes": {
+        return `You paid ${formatDollars(totalCost)}`;
+      }
+    }
+  }
+
+  return "Unknown";
+};
 
 const ConnectionsPageLoading = () => {
   return (
@@ -160,8 +211,15 @@ export function ConnectionsPageContainer({
           return (
             <EditExpenseDialogButton
               key={expense.expense.id}
+              currentUserId={me.user.id}
               participantId={participantId}
-              expense={expense.expense}
+              id={expense.expense.id}
+              name={expense.expense.name}
+              date={expense.expense.date}
+              category={expense.expense.category}
+              totalCost={expense.expense.totalCost}
+              ownerId={expense.expense.ownerId}
+              paymentType={expense.participant.paymentType}
             />
           );
         })}
@@ -177,6 +235,8 @@ export function ConnectionsPageContainer({
 function AddExpenseDialogButton({ participantId }: { participantId: string }) {
   const me = useUser();
   const trpc = useTRPC();
+  const [open, setOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const queryClient = useQueryClient();
   const addExpenseMutation = useMutation(
@@ -189,23 +249,20 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
         );
         queryClient.invalidateQueries(trpc.expense.getExpenses);
 
-        setName("");
-        setCategory(CATEGORY.None);
-        setTotalCost("");
         setOpen(false);
       },
     }),
   );
 
-  const [name, setName] = useState("");
-  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(
-    PAYMENT_TYPE_LIST[0],
-  );
-  const [category, setCategory] = useState(CATEGORY.None);
-  const [totalCost, setTotalCost] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (
+    e: React.FormEvent<HTMLFormElement>,
+    values: {
+      name: string;
+      totalCost: number;
+      category: string;
+      paymentType: PAYMENT_TYPE;
+    },
+  ) => {
     e.preventDefault();
 
     if (!me.user) {
@@ -214,21 +271,15 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
 
     const currentUserId = me.user.id;
 
-    const cost = parseFloat(totalCost);
-    if (isNaN(cost)) {
-      alert("Total cost must be a number");
-      return;
-    }
-
     addExpenseMutation.mutate({
       participant: {
         participantId: participantId,
-        paymentType: paymentType,
+        paymentType: values.paymentType,
       },
       expense: {
-        name,
-        totalCost: cost,
-        category,
+        name: values.name,
+        totalCost: values.totalCost,
+        category: values.category,
         ownerId: currentUserId,
       },
     });
@@ -248,98 +299,33 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div>
-            <label
-              htmlFor="expense-name"
-              className="mb-1 block text-sm font-medium"
-            >
-              Name
-            </label>
-            <input
-              id="expense-name"
-              type="text"
-              required
-              className="w-full rounded border p-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+        <ExpenseForm
+          id="add-expense-form"
+          initialValues={{
+            name: "",
+            category: CATEGORY.None,
+            totalCost: 0,
+            paymentType: PAYMENT_TYPE_LIST[0],
+          }}
+          onSubmit={handleSubmit}
+          ref={formRef}
+        />
 
-          <div>
-            <label
-              htmlFor="expense-category"
-              className="mb-1 block text-sm font-medium"
-            >
-              Category
-            </label>
-            <select
-              id="expense-category"
-              required
-              className="w-full rounded border p-2"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="expense-paymentType" className="mb-1 block">
-              Payment Type
-            </label>
-            <select
-              id="expense-paymentType"
-              required
-              className="w-full rounded border p-2"
-              value={paymentType}
-              onChange={(e) => setPaymentType(e.target.value as PAYMENT_TYPE)}
-            >
-              {PAYMENT_TYPES_UI_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="expense-totalCost"
-              className="mb-1 block text-sm font-medium"
-            >
-              Total Cost
-            </label>
-            <input
-              id="expense-totalCost"
-              type="number"
-              step="0.01"
-              required
-              className="w-full rounded border p-2"
-              value={totalCost}
-              onChange={(e) => setTotalCost(e.target.value)}
-            />
-          </div>
-
-          <div className="mt-4 flex justify-end space-x-2">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              disabled={addExpenseMutation.isPending}
-              variant="default"
-            >
-              {addExpenseMutation.isPending ? "Submitting..." : "Submit"}
+        <div className="mt-4 flex justify-end space-x-2">
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Cancel
             </Button>
-          </div>
-        </form>
+          </DialogClose>
+          <Button
+            type="submit"
+            form="add-expense-form"
+            disabled={addExpenseMutation.isPending}
+            variant="default"
+          >
+            {addExpenseMutation.isPending ? "Submitting..." : "Submit"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -350,29 +336,30 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
  * Clicking on an expense card opens this dialog.
  */
 function EditExpenseDialogButton({
+  currentUserId,
   participantId,
-  expense,
+  id,
+  name,
+  date,
+  category,
+  totalCost,
+  ownerId,
+  paymentType,
 }: {
+  currentUserId: string;
   participantId: string;
-  expense: {
-    id: number;
-    name: string;
-    date: Date;
-    category: string | null;
-    totalCost: number;
-    ownerId: string;
-  };
+  id: number;
+  name: string;
+  date: Date;
+  category: string | null;
+  totalCost: number;
+  ownerId: string;
+  paymentType: PAYMENT_TYPE;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(expense.name);
-  const [paymentType, setPaymentType] = useState<PAYMENT_TYPE>(
-    PAYMENT_TYPE_LIST[0],
-  );
-  const [category, setCategory] = useState(expense.category);
-  const [totalCost, setTotalCost] = useState(expense.totalCost.toString());
+  const formRef = useRef<HTMLFormElement>(null);
 
   const updateExpenseMutation = useMutation(
     trpc.expense.updateExpense.mutationOptions({
@@ -398,40 +385,10 @@ function EditExpenseDialogButton({
         );
 
         setOpen(false);
+        formRef.current?.reset();
       },
     }),
   );
-
-  const getWhoPaidByOwnerId = () => {
-    if (expense.ownerId === participantId) {
-      return `They paid ${formatDollars(expense.totalCost)}`;
-    }
-
-    return `You paid ${formatDollars(expense.totalCost)}`;
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const cost = parseFloat(totalCost);
-    if (isNaN(cost)) {
-      alert("Total cost must be a number");
-      return;
-    }
-
-    updateExpenseMutation.mutate({
-      user: { id: participantId },
-      participant: {
-        paymentType: paymentType,
-      },
-      expense: {
-        id: expense.id,
-        name,
-        category,
-        totalCost: cost,
-      },
-    });
-  };
 
   const handleDelete = () => {
     const confirmed = window.confirm(
@@ -439,12 +396,36 @@ function EditExpenseDialogButton({
     );
     if (!confirmed) return;
 
-    deleteExpenseMutation.mutate({ id: expense.id });
+    deleteExpenseMutation.mutate({ id: id });
   };
 
   const actionIsInProgress =
     updateExpenseMutation.isPending || deleteExpenseMutation.isPending;
 
+  const handleSubmit = (
+    e: React.FormEvent<HTMLFormElement>,
+    value: {
+      name: string;
+      totalCost: number;
+      category: string;
+      paymentType: PAYMENT_TYPE;
+    },
+  ): void => {
+    e.preventDefault();
+
+    updateExpenseMutation.mutate({
+      user: { id: participantId },
+      participant: {
+        paymentType: value.paymentType,
+      },
+      expense: {
+        id: id,
+        name: value.name,
+        category: value.category,
+        totalCost: value.totalCost,
+      },
+    });
+  };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -452,23 +433,27 @@ function EditExpenseDialogButton({
           <CardHeader>
             <CardTitle className="text-lg font-medium">
               <div className="flex gap-4 align-top">
-                <div className="flex-1">{expense.name}</div>
+                <div className="flex-1">{name}</div>
                 <div className="flex-shrink-0 text-sm text-muted-foreground">
-                  Date: {new Date(expense.date).toLocaleDateString()}
+                  Date: {new Date(date).toLocaleDateString()}
                 </div>
               </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-foreground">
-              Category: {expense.category}
-            </div>
+            <div className="text-sm text-foreground">Category: {category}</div>
 
-            <div className="text-sm">{getWhoPaidByOwnerId()}</div>
+            <div className="text-sm">
+              {getWhoPaidExpense(
+                currentUserId,
+                ownerId,
+                participantId,
+                paymentType,
+                totalCost,
+              )}
+            </div>
           </CardContent>
         </Card>
-        {/* <div className="cursor-pointer rounded border p-4 hover:bg-gray-100">
-        </div> */}
       </DialogTrigger>
 
       <DialogContent>
@@ -481,110 +466,198 @@ function EditExpenseDialogButton({
           </DialogHeader>
         </VisuallyHidden>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div>
-            <label
-              htmlFor={`expense-name-${expense.id}`}
-              className="mb-1 block text-sm font-medium"
-            >
-              Name
-            </label>
-            <input
-              id={`expense-name-${expense.id}`}
-              type="text"
-              required
-              className="w-full rounded border p-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+        <ExpenseForm
+          id="edit-expense-form"
+          ref={formRef}
+          initialValues={{
+            name: name,
+            category: category,
+            totalCost: totalCost,
+            paymentType: paymentType,
+          }}
+          onSubmit={handleSubmit}
+        />
 
-          <div>
-            <label
-              htmlFor="expense-category"
-              className="mb-1 block text-sm font-medium"
-            >
-              Category
-            </label>
-            <select
-              id="expense-category"
-              required
-              className="w-full rounded border p-2"
-              value={category ?? ""}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="" disabled>
-                Select a category
-              </option>
-              {CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="expense-paymentType" className="mb-1 block">
-              Payment Type
-            </label>
-            <select
-              id="expense-paymentType"
-              required
-              className="w-full rounded border p-2"
-              value={paymentType}
-              onChange={(e) => setPaymentType(e.target.value as PAYMENT_TYPE)}
-            >
-              {PAYMENT_TYPES_UI_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor={`expense-totalcost-${expense.id}`}
-              className="mb-1 block text-sm font-medium"
-            >
-              Total Cost
-            </label>
-            <input
-              id={`expense-totalcost-${expense.id}`}
-              type="number"
-              step="0.01"
-              required
-              className="w-full rounded border p-2"
-              value={totalCost}
-              onChange={(e) => setTotalCost(e.target.value)}
-            />
-          </div>
-          <div className="mt-4 flex justify-end space-x-2">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={actionIsInProgress}
-              >
-                Cancel
-              </Button>
-            </DialogClose>
-
+        <div className="mt-4 flex justify-end space-x-2">
+          <DialogClose asChild>
             <Button
-              variant="destructive"
               type="button"
-              onClick={handleDelete}
+              variant="outline"
               disabled={actionIsInProgress}
             >
-              {deleteExpenseMutation.isPending ? "Deleting..." : "Delete"}
+              Cancel
             </Button>
-            <Button type="submit" disabled={actionIsInProgress}>
-              {updateExpenseMutation.isPending ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </form>
+          </DialogClose>
+
+          <Button
+            variant="destructive"
+            type="button"
+            onClick={handleDelete}
+            disabled={actionIsInProgress}
+          >
+            {deleteExpenseMutation.isPending ? "Deleting..." : "Delete"}
+          </Button>
+          <Button
+            type="submit"
+            form="edit-expense-form"
+            disabled={actionIsInProgress}
+          >
+            {updateExpenseMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ExpenseForm({
+  initialValues,
+  onSubmit,
+  id,
+  ref,
+}: {
+  initialValues: {
+    name: string;
+    category: string | null;
+    totalCost: number;
+    paymentType: PAYMENT_TYPE;
+  };
+  id: string;
+  onSubmit: (
+    e: React.FormEvent<HTMLFormElement>,
+    value: {
+      name: string;
+      totalCost: number;
+      category: string;
+      paymentType: PAYMENT_TYPE;
+    },
+  ) => void;
+  ref?: React.Ref<HTMLFormElement>;
+}) {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const form = e.currentTarget as HTMLFormElement;
+    const formData = Object.fromEntries(new FormData(form).entries());
+
+    const {
+      "expense-name": name,
+      "expense-totalcost": totalCost,
+      "expense-category": category,
+      "expense-paymentType": paymentType,
+    } = formData;
+
+    if (typeof name !== "string" || name.trim() === "") {
+      alert("Name must be a non-empty string");
+      return;
+    }
+
+    const cost = parseFloat(totalCost as string);
+    if (isNaN(cost)) {
+      alert("Total cost must be a valid number");
+      return;
+    }
+
+    if (typeof category !== "string" || category.trim() === "") {
+      alert("Category must be selected");
+      return;
+    }
+
+    if (typeof paymentType !== "string" || paymentType.trim() === "") {
+      alert("Payment type must be selected");
+      return;
+    }
+
+    onSubmit(e, {
+      name: name.trim(),
+      totalCost: cost,
+      category: category.trim(),
+      paymentType: paymentType.trim() as PAYMENT_TYPE,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 space-y-4" id={id} ref={ref}>
+      <div>
+        <label
+          htmlFor={`expense-name`}
+          className="mb-1 block text-sm font-medium"
+        >
+          Name
+        </label>
+        <input
+          id={`expense-name`}
+          name="expense-name"
+          type="text"
+          required
+          className="w-full rounded border p-2"
+          defaultValue={initialValues.name}
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor={`expense-totalcost`}
+          className="mb-1 block text-sm font-medium"
+        >
+          Total Cost
+        </label>
+        <input
+          id={`expense-totalcost`}
+          name={`expense-totalcost`}
+          type="number"
+          step="0.01"
+          required
+          className="w-full rounded border p-2"
+          defaultValue={
+            initialValues.totalCost === 0 ? "" : initialValues.totalCost
+          }
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="expense-category"
+          className="mb-1 block text-sm font-medium"
+        >
+          Category
+        </label>
+        <select
+          id="expense-category"
+          name="expense-category"
+          required
+          className="w-full rounded border p-2"
+          defaultValue={initialValues.category ?? ""}
+        >
+          <option value="" disabled>
+            Select a category
+          </option>
+          {CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="expense-paymentType" className="mb-1 block">
+          Payment Type
+        </label>
+        <select
+          id="expense-paymentType"
+          name="expense-paymentType"
+          required
+          className="w-full rounded border p-2"
+          defaultValue={initialValues.paymentType ?? PAYMENT_TYPE_LIST[0]}
+        >
+          {PAYMENT_TYPES_UI_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </form>
   );
 }
