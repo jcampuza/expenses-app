@@ -328,9 +328,13 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
           isNewExpense={true}
         />
 
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-x-2 sm:space-y-0">
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
           </DialogClose>
@@ -339,6 +343,7 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
             form="add-expense-form"
             disabled={addExpenseMutation.isPending}
             variant="default"
+            className="w-full sm:w-auto"
           >
             {addExpenseMutation.isPending ? "Submitting..." : "Submit"}
           </Button>
@@ -496,12 +501,13 @@ function EditExpenseDialogButton({
           isNewExpense={false}
         />
 
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-x-2 sm:space-y-0">
           <DialogClose asChild>
             <Button
               type="button"
               variant="outline"
               disabled={actionIsInProgress}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -512,6 +518,7 @@ function EditExpenseDialogButton({
             type="button"
             onClick={handleDelete}
             disabled={actionIsInProgress}
+            className="w-full sm:w-auto"
           >
             {deleteExpenseMutation.isPending ? "Deleting..." : "Delete"}
           </Button>
@@ -519,6 +526,7 @@ function EditExpenseDialogButton({
             type="submit"
             form="edit-expense-form"
             disabled={actionIsInProgress}
+            className="w-full sm:w-auto"
           >
             {updateExpenseMutation.isPending ? "Saving..." : "Save"}
           </Button>
@@ -633,11 +641,16 @@ function ExpenseForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-4" id={id} ref={ref}>
+    <form
+      onSubmit={handleSubmit}
+      className="mt-4 space-y-6 sm:space-y-4"
+      id={id}
+      ref={ref}
+    >
       <div>
         <label
           htmlFor={`${id}-name`}
-          className="mb-1 block text-sm font-medium"
+          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
         >
           Name
         </label>
@@ -646,7 +659,7 @@ function ExpenseForm({
           name="expense-name"
           type="text"
           required
-          className="w-full rounded border p-2"
+          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={initialValues.name}
           onChange={handleNameChange}
         />
@@ -655,7 +668,7 @@ function ExpenseForm({
       <div>
         <label
           htmlFor={`${id}-totalcost`}
-          className="mb-1 block text-sm font-medium"
+          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
         >
           Total Cost
         </label>
@@ -665,7 +678,7 @@ function ExpenseForm({
           type="number"
           step="0.01"
           required
-          className="w-full rounded border p-2"
+          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={
             initialValues.totalCost === 0 ? "" : initialValues.totalCost
           }
@@ -675,7 +688,7 @@ function ExpenseForm({
       <div>
         <label
           htmlFor={`${id}-category`}
-          className="mb-1 block text-sm font-medium"
+          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
         >
           Category
         </label>
@@ -683,7 +696,7 @@ function ExpenseForm({
           id={`${id}-category`}
           name="expense-category"
           required
-          className="w-full rounded border p-2"
+          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={initialValues.category}
           onChange={handleCategoryChange}
           ref={categorySelectRef}
@@ -697,14 +710,17 @@ function ExpenseForm({
       </div>
 
       <div>
-        <label htmlFor={`${id}-paymentType`} className="mb-1 block">
+        <label
+          htmlFor={`${id}-paymentType`}
+          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
+        >
           Payment Type
         </label>
         <select
           id={`${id}-paymentType`}
           name="expense-paymentType"
           required
-          className="w-full rounded border p-2"
+          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={initialValues.paymentType ?? PAYMENT_TYPE_LIST[0]}
         >
           {PAYMENT_TYPES_UI_OPTIONS.map((item) => (
