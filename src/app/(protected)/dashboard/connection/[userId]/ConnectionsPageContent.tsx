@@ -308,12 +308,14 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
       </DialogTrigger>
 
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Expense</DialogTitle>
-          <DialogDescription>
-            Fill in the expense details below.
-          </DialogDescription>
-        </DialogHeader>
+        <VisuallyHidden>
+          <DialogHeader>
+            <DialogTitle>Add Expense</DialogTitle>
+            <DialogDescription>
+              Fill in the expense details below.
+            </DialogDescription>
+          </DialogHeader>
+        </VisuallyHidden>
 
         <ExpenseForm
           id="add-expense-form"
