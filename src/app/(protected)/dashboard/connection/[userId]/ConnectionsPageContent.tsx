@@ -22,10 +22,24 @@ import { Input } from "~/components/ui/input";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { VisuallyHidden } from "~/components/ui/visually-hidden";
-import { CATEGORIES, CATEGORY } from "~/lib/categories";
+import { CATEGORIES, CATEGORY, suggestCategory } from "~/lib/categories";
 import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
 import { PAYMENT_TYPE, PAYMENT_TYPE_LIST } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
+
+interface ExpenseItem {
+  expense: {
+    id: number;
+    name: string;
+    category: string | null;
+    totalCost: number;
+    date: Date;
+    ownerId: string;
+  };
+  participant: {
+    paymentType: PAYMENT_TYPE;
+  };
+}
 
 const getWhoPaidExpense = (
   currentUserId: string,
@@ -130,7 +144,9 @@ export function ConnectionsPageContainer({
 
   const searchItemsResponse = useMemo(() => {
     if (searchTerm) {
-      return fuseSearch.search(searchTerm).map((item) => item.item);
+      return fuseSearch
+        .search(searchTerm)
+        .map((item) => item.item as ExpenseItem);
     }
 
     return expensesQuery.data?.items ?? [];
@@ -309,6 +325,7 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
           }}
           onSubmit={handleSubmit}
           ref={formRef}
+          isNewExpense={true}
         />
 
         <div className="mt-4 flex justify-end space-x-2">
@@ -471,11 +488,12 @@ function EditExpenseDialogButton({
           ref={formRef}
           initialValues={{
             name: name,
-            category: category,
+            category: category ?? CATEGORY.None,
             totalCost: totalCost,
             paymentType: paymentType,
           }}
           onSubmit={handleSubmit}
+          isNewExpense={false}
         />
 
         <div className="mt-4 flex justify-end space-x-2">
@@ -515,10 +533,11 @@ function ExpenseForm({
   onSubmit,
   id,
   ref,
+  isNewExpense = false,
 }: {
   initialValues: {
     name: string;
-    category: string | null;
+    category: string;
     totalCost: number;
     paymentType: PAYMENT_TYPE;
   };
@@ -533,7 +552,44 @@ function ExpenseForm({
     },
   ) => void;
   ref?: React.Ref<HTMLFormElement>;
-}) {
+  isNewExpense?: boolean;
+}): JSX.Element {
+  // Track if category was manually selected
+  const [isManualSelection, setIsManualSelection] = useState(false);
+  const categorySelectRef = useRef<HTMLSelectElement>(null);
+
+  // Handle expense name change
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+
+    // Only suggest categories for new expenses
+    if (isNewExpense && categorySelectRef.current && newName.length >= 3) {
+      // Don't make new suggestions if:
+      // 1. User has manually selected a category (isManualSelection is true)
+      // 2. The current category is not None
+      const currentCategory = categorySelectRef.current.value;
+      const shouldSuggest =
+        !isManualSelection || currentCategory === "None" || !currentCategory;
+
+      if (shouldSuggest) {
+        const suggestedCategory = suggestCategory(newName);
+        if (suggestedCategory) {
+          categorySelectRef.current.value = suggestedCategory;
+        }
+      }
+    }
+  };
+
+  // Handle manual category selection
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCategory = e.target.value;
+    if (selectedCategory === "None" || !selectedCategory) {
+      setIsManualSelection(false);
+    } else {
+      setIsManualSelection(true);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -580,31 +636,32 @@ function ExpenseForm({
     <form onSubmit={handleSubmit} className="mt-4 space-y-4" id={id} ref={ref}>
       <div>
         <label
-          htmlFor={`expense-name`}
+          htmlFor={`${id}-name`}
           className="mb-1 block text-sm font-medium"
         >
           Name
         </label>
         <input
-          id={`expense-name`}
+          id={`${id}-name`}
           name="expense-name"
           type="text"
           required
           className="w-full rounded border p-2"
           defaultValue={initialValues.name}
+          onChange={handleNameChange}
         />
       </div>
 
       <div>
         <label
-          htmlFor={`expense-totalcost`}
+          htmlFor={`${id}-totalcost`}
           className="mb-1 block text-sm font-medium"
         >
           Total Cost
         </label>
         <input
-          id={`expense-totalcost`}
-          name={`expense-totalcost`}
+          id={`${id}-totalcost`}
+          name="expense-totalcost"
           type="number"
           step="0.01"
           required
@@ -617,21 +674,20 @@ function ExpenseForm({
 
       <div>
         <label
-          htmlFor="expense-category"
+          htmlFor={`${id}-category`}
           className="mb-1 block text-sm font-medium"
         >
           Category
         </label>
         <select
-          id="expense-category"
+          id={`${id}-category`}
           name="expense-category"
           required
           className="w-full rounded border p-2"
-          defaultValue={initialValues.category ?? ""}
+          defaultValue={initialValues.category}
+          onChange={handleCategoryChange}
+          ref={categorySelectRef}
         >
-          <option value="" disabled>
-            Select a category
-          </option>
           {CATEGORIES.map((category) => (
             <option key={category} value={category}>
               {category}
@@ -641,11 +697,11 @@ function ExpenseForm({
       </div>
 
       <div>
-        <label htmlFor="expense-paymentType" className="mb-1 block">
+        <label htmlFor={`${id}-paymentType`} className="mb-1 block">
           Payment Type
         </label>
         <select
-          id="expense-paymentType"
+          id={`${id}-paymentType`}
           name="expense-paymentType"
           required
           className="w-full rounded border p-2"
