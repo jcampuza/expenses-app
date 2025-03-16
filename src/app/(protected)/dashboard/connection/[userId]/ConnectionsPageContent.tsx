@@ -1,11 +1,8 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import {
-  DialogClose,
-  DialogDescription,
-  DialogTitle,
-} from "@radix-ui/react-dialog";
+import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
 import { useMemo, useRef, useState } from "react";
@@ -14,11 +11,14 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTrigger,
 } from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
+import { Input, Select } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { VisuallyHidden } from "~/components/ui/visually-hidden";
@@ -26,20 +26,6 @@ import { CATEGORIES, CATEGORY, suggestCategory } from "~/lib/categories";
 import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
 import { PAYMENT_TYPE, PAYMENT_TYPE_LIST } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
-
-interface ExpenseItem {
-  expense: {
-    id: number;
-    name: string;
-    category: string | null;
-    totalCost: number;
-    date: Date;
-    ownerId: string;
-  };
-  participant: {
-    paymentType: PAYMENT_TYPE;
-  };
-}
 
 const getWhoPaidExpense = (
   currentUserId: string,
@@ -144,9 +130,7 @@ export function ConnectionsPageContainer({
 
   const searchItemsResponse = useMemo(() => {
     if (searchTerm) {
-      return fuseSearch
-        .search(searchTerm)
-        .map((item) => item.item as ExpenseItem);
+      return fuseSearch.search(searchTerm).map((item) => item.item);
     }
 
     return expensesQuery.data?.items ?? [];
@@ -201,18 +185,19 @@ export function ConnectionsPageContainer({
           >
             {getBalanceTitle()}
           </p>
-          <div>
-            <Input
-              type="text"
-              value={searchTerm}
-              placeholder="Search..."
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
         </div>
         <div>
           <AddExpenseDialogButton participantId={participantId} />
         </div>
+      </div>
+
+      <div>
+        <Input
+          type="text"
+          value={searchTerm}
+          placeholder="Search..."
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
       <Separator className="my-4" />
@@ -544,6 +529,7 @@ function ExpenseForm({
   id,
   ref,
   isNewExpense = false,
+  className,
 }: {
   initialValues: {
     name: string;
@@ -563,6 +549,7 @@ function ExpenseForm({
   ) => void;
   ref?: React.Ref<HTMLFormElement>;
   isNewExpense?: boolean;
+  className?: string;
 }): JSX.Element {
   // Track if category was manually selected
   const [isManualSelection, setIsManualSelection] = useState(false);
@@ -645,36 +632,30 @@ function ExpenseForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-4 space-y-6 sm:space-y-4"
+      className={cn("space-y-4", className)}
       id={id}
       ref={ref}
     >
       <div>
-        <label
+        <Label
           htmlFor={`${id}-name`}
           className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
         >
           Name
-        </label>
-        <input
+        </Label>
+        <Input
           id={`${id}-name`}
           name="expense-name"
           type="text"
           required
-          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={initialValues.name}
           onChange={handleNameChange}
         />
       </div>
 
       <div>
-        <label
-          htmlFor={`${id}-totalcost`}
-          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
-        >
-          Total Cost
-        </label>
-        <input
+        <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
+        <Input
           id={`${id}-totalcost`}
           name="expense-totalcost"
           type="number"
@@ -688,17 +669,11 @@ function ExpenseForm({
       </div>
 
       <div>
-        <label
-          htmlFor={`${id}-category`}
-          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
-        >
-          Category
-        </label>
-        <select
+        <Label htmlFor={`${id}-category`}>Category</Label>
+        <Select
           id={`${id}-category`}
           name="expense-category"
           required
-          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={initialValues.category}
           onChange={handleCategoryChange}
           ref={categorySelectRef}
@@ -708,21 +683,15 @@ function ExpenseForm({
               {category}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
-        <label
-          htmlFor={`${id}-paymentType`}
-          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
-        >
-          Payment Type
-        </label>
-        <select
+        <Label htmlFor={`${id}-paymentType`}>Payment Type</Label>
+        <Select
           id={`${id}-paymentType`}
           name="expense-paymentType"
           required
-          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={initialValues.paymentType ?? PAYMENT_TYPE_LIST[0]}
         >
           {PAYMENT_TYPES_UI_OPTIONS.map((item) => (
@@ -730,7 +699,7 @@ function ExpenseForm({
               {item.label}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </form>
   );

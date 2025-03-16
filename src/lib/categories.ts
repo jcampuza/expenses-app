@@ -35,6 +35,8 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   food: CATEGORY.Food,
   sushi: CATEGORY.Food,
   pizza: CATEGORY.Food,
+  "whole foods": CATEGORY.Food,
+  boba: CATEGORY.Food,
 
   // Groceries
   grocery: CATEGORY.Groceries,
@@ -54,6 +56,9 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   train: CATEGORY.Transportation,
   bus: CATEGORY.Transportation,
   metro: CATEGORY.Transportation,
+  flight: CATEGORY.Transportation,
+  plane: CATEGORY.Transportation,
+  subway: CATEGORY.Transportation,
 
   // Entertainment
   movie: CATEGORY.Entertainment,
@@ -100,7 +105,9 @@ const commonWordsFuse = new Fuse(Object.keys(COMMON_WORD_CATEGORIES), {
 });
 
 export function suggestCategory(name: string): string | null {
-  if (!name.trim() || name.length < 3) return null;
+  if (!name.trim() || name.length < 3) {
+    return null;
+  }
 
   // Split the name into words and convert to lowercase
   const words = name.toLowerCase().split(/\s+/);
