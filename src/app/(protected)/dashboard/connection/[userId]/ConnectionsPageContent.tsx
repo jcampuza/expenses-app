@@ -102,16 +102,16 @@ const ConnectionsPageEmpty = () => {
 };
 
 export function ConnectionsPageContainer({
-  participantId,
+  connectionId,
 }: {
-  participantId: string;
+  connectionId: string;
 }) {
   const me = useUser();
   const trpc = useTRPC();
 
   const expensesQuery = useQuery(
     trpc.expense.getExpenses.queryOptions(
-      { userId: participantId },
+      { userId: connectionId },
       {
         refetchInterval: 1000 * 60 * 5,
         refetchIntervalInBackground: false,
@@ -187,7 +187,7 @@ export function ConnectionsPageContainer({
           </p>
         </div>
         <div>
-          <AddExpenseDialogButton participantId={participantId} />
+          <AddExpenseDialogButton participantId={connectionId} />
         </div>
       </div>
 
@@ -213,7 +213,7 @@ export function ConnectionsPageContainer({
             <EditExpenseDialogButton
               key={expense.expense.id}
               currentUserId={me.user.id}
-              participantId={participantId}
+              participantId={expense.participant.participantId}
               id={expense.expense.id}
               name={expense.expense.name}
               date={expense.expense.date}

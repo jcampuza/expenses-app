@@ -7,5 +7,5 @@ export default async function ConnectionPage({
 }) {
   const { userId } = await params;
 
-  return <ConnectionsPageContainer participantId={userId} />;
+  return <ConnectionsPageContainer connectionId={userId} />;
 }
