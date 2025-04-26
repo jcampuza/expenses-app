@@ -243,12 +243,11 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
   const addExpenseMutation = useMutation(
     trpc.expense.addExpense.mutationOptions({
       onSuccess: async () => {
-        queryClient.invalidateQueries(
+        await queryClient.invalidateQueries(
           trpc.expense.getExpenses.queryFilter({
             userId: participantId,
           }),
         );
-        queryClient.invalidateQueries(trpc.expense.getExpenses);
 
         setOpen(false);
       },
@@ -370,30 +369,23 @@ function EditExpenseDialogButton({
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
+  const onCompleted = async () => {
+    await queryClient.invalidateQueries(trpc.expense.getExpenses.queryFilter());
+    setOpen(false);
+  };
+
   const updateExpenseMutation = useMutation(
     trpc.expense.updateExpense.mutationOptions({
-      onSuccess: async () => {
-        queryClient.invalidateQueries(
-          trpc.expense.getExpenses.queryFilter({
-            userId: participantId,
-          }),
-        );
-
-        setOpen(false);
+      onSuccess: () => {
+        onCompleted();
       },
     }),
   );
 
   const deleteExpenseMutation = useMutation(
     trpc.expense.deleteExpense.mutationOptions({
-      onSuccess: async () => {
-        queryClient.invalidateQueries(
-          trpc.expense.getExpenses.queryFilter({
-            userId: participantId,
-          }),
-        );
-
-        setOpen(false);
+      onSuccess: () => {
+        onCompleted();
         formRef.current?.reset();
       },
     }),
@@ -637,6 +629,22 @@ function ExpenseForm({
       ref={ref}
     >
       <div>
+        <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
+        <Input
+          id={`${id}-totalcost`}
+          name="expense-totalcost"
+          type="number"
+          step="0.01"
+          pattern="[0-9]+(\.[0-9][0-9]?)?"
+          required
+          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
+          defaultValue={
+            initialValues.totalCost === 0 ? "" : initialValues.totalCost
+          }
+        />
+      </div>
+
+      <div>
         <Label
           htmlFor={`${id}-name`}
           className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
@@ -650,21 +658,6 @@ function ExpenseForm({
           required
           defaultValue={initialValues.name}
           onChange={handleNameChange}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
-        <Input
-          id={`${id}-totalcost`}
-          name="expense-totalcost"
-          type="number"
-          step="0.01"
-          required
-          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
-          defaultValue={
-            initialValues.totalCost === 0 ? "" : initialValues.totalCost
-          }
         />
       </div>
 
