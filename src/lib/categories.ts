@@ -6,6 +6,7 @@ export const CATEGORY = {
   Food: "Food",
   Groceries: "Groceries",
   Transportation: "Transportation",
+  Travel: "Travel",
   Entertainment: "Entertainment",
   Shopping: "Shopping",
   Utilities: "Utilities",
@@ -56,9 +57,23 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   train: CATEGORY.Transportation,
   bus: CATEGORY.Transportation,
   metro: CATEGORY.Transportation,
-  flight: CATEGORY.Transportation,
-  plane: CATEGORY.Transportation,
   subway: CATEGORY.Transportation,
+
+  // Travel
+  flight: CATEGORY.Travel,
+  plane: CATEGORY.Travel,
+  hotel: CATEGORY.Travel,
+  airbnb: CATEGORY.Travel,
+  booking: CATEGORY.Travel,
+  expedia: CATEGORY.Travel,
+  vacation: CATEGORY.Travel,
+  trip: CATEGORY.Travel,
+  travel: CATEGORY.Travel,
+  resort: CATEGORY.Travel,
+  motel: CATEGORY.Travel,
+  hostel: CATEGORY.Travel,
+  rental: CATEGORY.Travel,
+  cruise: CATEGORY.Travel,
 
   // Entertainment
   movie: CATEGORY.Entertainment,
