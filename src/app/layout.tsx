@@ -7,7 +7,6 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "~/components/ui/toaster";
 import { Header } from "~/app/components/Header";
 import Footer from "~/app/components/Footer";
-import { AppScanner } from "~/app/components/AppScaner";
 
 export const metadata: Metadata = {
   title: "ExpenseMate",
@@ -23,7 +22,6 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${GeistSans.variable}`}>
         <body>
-          <AppScanner />
           <TRPCReactProvider>
             <div className="flex flex-col">
               <div className="flex min-h-screen flex-col">

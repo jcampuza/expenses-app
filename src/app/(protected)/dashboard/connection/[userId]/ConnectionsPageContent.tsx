@@ -7,8 +7,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
 import { useMemo, useRef, useState } from "react";
 import { SkeletonCard } from "~/app/components/SkeletonCard";
+import ExpenseCard from "~/components/ExpenseCard";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+
 import {
   Dialog,
   DialogClose,
@@ -27,55 +28,67 @@ import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
 import { PAYMENT_TYPE, PAYMENT_TYPE_LIST } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
 
-const getWhoPaidExpense = (
+const getWhoPaidExpenseDetails = (
   currentUserId: string,
   ownerId: string,
   participantUserId: string,
   paymentType: PAYMENT_TYPE,
   totalCost: number,
 ) => {
+  // Default values
+  let whoPaid: "you" | "they" = "they";
+  let whoOwes: "you" | "they" = "you";
+  let isSplitEqually = false;
+
   // Current user is the owner
   if (ownerId === currentUserId) {
     switch (paymentType) {
-      case "paid_by_owner_split_equally": {
-        return `You paid ${formatDollars(totalCost)} split equally`;
-      }
-
-      case "paid_by_owner_participant_owes": {
-        return `You paid ${formatDollars(totalCost)} and they owe you`;
-      }
-
-      case "paid_by_participant_split_equally": {
-        return `They paid ${formatDollars(totalCost)} split equally`;
-      }
-
-      case "paid_by_participant_owner_owes": {
-        return `They paid ${formatDollars(totalCost)} and you owe them`;
-      }
+      case "paid_by_owner_split_equally":
+        whoPaid = "you";
+        whoOwes = "they";
+        isSplitEqually = true;
+        break;
+      case "paid_by_owner_participant_owes":
+        whoPaid = "you";
+        whoOwes = "they";
+        isSplitEqually = false;
+        break;
+      case "paid_by_participant_split_equally":
+        whoPaid = "they";
+        whoOwes = "you";
+        isSplitEqually = true;
+        break;
+      case "paid_by_participant_owner_owes":
+        whoPaid = "they";
+        whoOwes = "you";
+        isSplitEqually = false;
+        break;
     }
-  }
-
-  // Current user is the participant
-  if (participantUserId === currentUserId) {
+  } else if (participantUserId === currentUserId) {
     switch (paymentType) {
-      case "paid_by_owner_split_equally": {
-        return `They paid ${formatDollars(totalCost)} split equally`;
-      }
-      case "paid_by_owner_participant_owes": {
-        return `They paid ${formatDollars(totalCost)} and you owe them`;
-      }
-
-      case "paid_by_participant_split_equally": {
-        return `You paid ${formatDollars(totalCost)} split equally`;
-      }
-
-      case "paid_by_participant_owner_owes": {
-        return `You paid ${formatDollars(totalCost)}`;
-      }
+      case "paid_by_owner_split_equally":
+        whoPaid = "they";
+        whoOwes = "you";
+        isSplitEqually = true;
+        break;
+      case "paid_by_owner_participant_owes":
+        whoPaid = "they";
+        whoOwes = "you";
+        isSplitEqually = false;
+        break;
+      case "paid_by_participant_split_equally":
+        whoPaid = "you";
+        whoOwes = "they";
+        isSplitEqually = true;
+        break;
+      case "paid_by_participant_owner_owes":
+        whoPaid = "you";
+        whoOwes = "they";
+        isSplitEqually = false;
+        break;
     }
   }
-
-  return "Unknown";
+  return { whoPaid, whoOwes, isSplitEqually, amount: totalCost };
 };
 
 const ConnectionsPageLoading = () => {
@@ -160,7 +173,7 @@ export function ConnectionsPageContainer({
   return (
     <div className="flex-1 p-4">
       {expensesQuery.isFetching && (
-        <div className="absolute bottom-4 right-4 z-10 mx-auto flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="fixed bottom-4 right-4 z-10 mx-auto flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex items-center rounded-full bg-primary/10 px-4 py-2 text-xs">
             <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             <span className="text-primary">Updating...</span>
@@ -206,9 +219,7 @@ export function ConnectionsPageContainer({
 
       {/* Expenses List */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {searchItemsResponse.map((searchResult) => {
-          const expense = searchResult;
-
+        {searchItemsResponse.map((expense) => {
           return (
             <EditExpenseDialogButton
               key={expense.expense.id}
@@ -219,6 +230,7 @@ export function ConnectionsPageContainer({
               date={expense.expense.date}
               category={expense.expense.category}
               totalCost={expense.expense.totalCost}
+              balance={expense.balance}
               ownerId={expense.expense.ownerId}
               paymentType={expense.participant.paymentType}
             />
@@ -351,6 +363,7 @@ function EditExpenseDialogButton({
   date,
   category,
   totalCost,
+  balance,
   ownerId,
   paymentType,
 }: {
@@ -361,6 +374,7 @@ function EditExpenseDialogButton({
   date: Date;
   category: string | null;
   totalCost: number;
+  balance: number;
   ownerId: string;
   paymentType: PAYMENT_TYPE;
 }) {
@@ -427,34 +441,23 @@ function EditExpenseDialogButton({
       },
     });
   };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer transition-[transform,shadow] hover:scale-[1.01] hover:shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              <div className="flex gap-4 align-top">
-                <div className="flex-1">{name}</div>
-                <div className="flex-shrink-0 text-sm text-muted-foreground">
-                  Date: {new Date(date).toLocaleDateString()}
-                </div>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-foreground">Category: {category}</div>
-
-            <div className="text-sm">
-              {getWhoPaidExpense(
-                currentUserId,
-                ownerId,
-                participantId,
-                paymentType,
-                totalCost,
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div>
+          <ExpenseItem
+            name={name}
+            date={date}
+            category={category}
+            currentUserId={currentUserId}
+            ownerId={ownerId}
+            participantId={participantId}
+            paymentType={paymentType}
+            totalCost={totalCost}
+            balance={balance}
+          />
+        </div>
       </DialogTrigger>
 
       <DialogContent>
@@ -515,6 +518,49 @@ function EditExpenseDialogButton({
   );
 }
 
+function ExpenseItem({
+  name,
+  date,
+  category,
+  currentUserId,
+  ownerId,
+  participantId,
+  paymentType,
+  totalCost,
+  balance,
+}: {
+  name: string;
+  date: Date;
+  category: string | null;
+  currentUserId: string;
+  ownerId: string;
+  participantId: string;
+  paymentType: PAYMENT_TYPE;
+  totalCost: number;
+  balance: number;
+}) {
+  const details = getWhoPaidExpenseDetails(
+    currentUserId,
+    ownerId,
+    participantId,
+    paymentType,
+    totalCost,
+  );
+  return (
+    <ExpenseCard
+      name={name}
+      date={date.toLocaleDateString()}
+      category={category ?? CATEGORY.None}
+      amount={Math.abs(balance)}
+      totalCost={totalCost}
+      whoPaid={details.whoPaid}
+      whoOwes={balance > 0 ? "they" : "you"}
+      isSplitEqually={details.isSplitEqually}
+      variant="compact"
+    />
+  );
+}
+
 function ExpenseForm({
   initialValues,
   onSubmit,
@@ -542,7 +588,7 @@ function ExpenseForm({
   ref?: React.Ref<HTMLFormElement>;
   isNewExpense?: boolean;
   className?: string;
-}): JSX.Element {
+}) {
   // Track if category was manually selected
   const [isManualSelection, setIsManualSelection] = useState(false);
   const categorySelectRef = useRef<HTMLSelectElement>(null);

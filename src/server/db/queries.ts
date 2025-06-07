@@ -127,7 +127,7 @@ export const getUsersSharedExpenses = async (
   );
 
   return {
-    items: sharedExpenses,
+    items: expensesWithBalance,
     totalBalance,
   };
 };
