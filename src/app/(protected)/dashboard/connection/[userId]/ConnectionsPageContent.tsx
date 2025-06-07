@@ -88,6 +88,7 @@ const getWhoPaidExpenseDetails = (
         break;
     }
   }
+
   return { whoPaid, whoOwes, isSplitEqually, amount: totalCost };
 };
 
@@ -554,7 +555,7 @@ function ExpenseItem({
       amount={Math.abs(balance)}
       totalCost={totalCost}
       whoPaid={details.whoPaid}
-      whoOwes={balance > 0 ? "they" : "you"}
+      whoOwes={details.whoOwes}
       isSplitEqually={details.isSplitEqually}
       variant="compact"
     />
