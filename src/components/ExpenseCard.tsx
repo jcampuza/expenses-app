@@ -12,6 +12,8 @@ import {
   ShoppingBasket,
   Receipt,
   FerrisWheel,
+  Plane,
+  Package,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 
@@ -35,10 +37,12 @@ export const categoryIcons: Record<string, React.ReactNode> = {
   Food: <Hamburger className="h-4 w-4" />,
   Groceries: <ShoppingCart className="h-4 w-4" />,
   Transportation: <Car className="h-4 w-4" />,
+  Travel: <Plane className="h-4 w-4" />,
   Entertainment: <RollerCoaster className="h-4 w-4" />,
   Shopping: <ShoppingBasket className="h-4 w-4" />,
   Utilities: <Receipt className="h-4 w-4" />,
   Fun: <FerrisWheel className="h-4 w-4" />,
+  Other: <Package className="h-4 w-4" />,
   None: <div className="h-4 w-4" />,
 };
 
