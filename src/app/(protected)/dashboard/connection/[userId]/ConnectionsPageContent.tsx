@@ -257,8 +257,10 @@ export function ConnectionsPageContainer({
 
 const ExpenseDialogButton = ({
   variant,
+  ...rest
 }: {
   variant: "desktop" | "mobile";
+  rest: React.ComponentProps<typeof Button>;
 }) => {
   // Scroll-aware state using custom hook
   const { scrollDirection } = useScrollDirection();
@@ -270,9 +272,10 @@ const ExpenseDialogButton = ({
     (scrollDirection === "DOWN" && window.scrollY === 0);
 
   return variant === "desktop" ? (
-    <Button>Add Expense</Button>
+    <Button {...rest}>Add Expense</Button>
   ) : (
     <Button
+      {...rest}
       className={cn(
         "h-12 rounded-full shadow-lg transition-all duration-200 ease-out hover:shadow-xl",
         showText ? "w-36 px-4" : "w-12 px-0",
