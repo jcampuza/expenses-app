@@ -5,7 +5,8 @@ import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
-import { useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { SkeletonCard } from "~/app/components/SkeletonCard";
 import ExpenseCard from "~/components/ExpenseCard";
 import { Button } from "~/components/ui/button";
@@ -17,14 +18,15 @@ import {
   DialogHeader,
   DialogTrigger,
 } from "~/components/ui/dialog";
-import { Input, Select } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { Input } from "~/components/ui/input";
 
+import { AddExpenseForm } from "~/app/(protected)/dashboard/connection/[userId]/AddExpenseForm";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { VisuallyHidden } from "~/components/ui/visually-hidden";
-import { CATEGORIES, CATEGORY, suggestCategory } from "~/lib/categories";
-import { cn, formatDollars, PAYMENT_TYPES_UI_OPTIONS } from "~/lib/utils";
+import { useScrollDirection } from "~/hooks/use-scroll-direction";
+import { CATEGORY } from "~/lib/categories";
+import { cn, formatDollars } from "~/lib/utils";
 import { PAYMENT_TYPE, PAYMENT_TYPE_LIST } from "~/server/db/schema";
 import { useTRPC } from "~/trpc/utils";
 
@@ -92,6 +94,19 @@ const getWhoPaidExpenseDetails = (
   return { whoPaid, whoOwes, isSplitEqually, amount: totalCost };
 };
 
+const getBalanceTitle = (totalBalance: number, userName?: string | null) => {
+  if (totalBalance > 0) {
+    return `You owe ${formatDollars(Math.abs(totalBalance))}`;
+  }
+
+  if (totalBalance < 0) {
+    const theirName = userName ?? "Them";
+    return `${theirName} owes ${formatDollars(Math.abs(totalBalance))}`;
+  }
+
+  return "All debts settled";
+};
+
 const ConnectionsPageLoading = () => {
   return (
     <div className="p-4">
@@ -134,6 +149,7 @@ export function ConnectionsPageContainer({
   );
 
   const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const fuseSearch = useMemo(() => {
     return new Fuse(expensesQuery.data?.items ?? [], {
@@ -143,12 +159,12 @@ export function ConnectionsPageContainer({
   }, [expensesQuery.data?.items]);
 
   const searchItemsResponse = useMemo(() => {
-    if (searchTerm) {
-      return fuseSearch.search(searchTerm).map((item) => item.item);
+    if (deferredSearchTerm) {
+      return fuseSearch.search(deferredSearchTerm).map((item) => item.item);
     }
 
     return expensesQuery.data?.items ?? [];
-  }, [searchTerm, expensesQuery.data?.items, fuseSearch]);
+  }, [deferredSearchTerm, expensesQuery.data?.items, fuseSearch]);
 
   if (expensesQuery.isLoading || !me.isLoaded) {
     return <ConnectionsPageLoading />;
@@ -157,19 +173,6 @@ export function ConnectionsPageContainer({
   if (!expensesQuery.data || !me.user) {
     return <ConnectionsPageEmpty />;
   }
-
-  const getBalanceTitle = () => {
-    if (expensesQuery.data.totalBalance > 0) {
-      return `You owe ${formatDollars(Math.abs(expensesQuery.data.totalBalance))}`;
-    }
-
-    if (expensesQuery.data.totalBalance < 0) {
-      const theirName = expensesQuery.data.user.name ?? "Them";
-      return `${theirName} owes ${formatDollars(Math.abs(expensesQuery.data.totalBalance))}`;
-    }
-
-    return "All debts settled";
-  };
 
   return (
     <div className="flex-1 p-4">
@@ -197,11 +200,18 @@ export function ConnectionsPageContainer({
                 "text-green-600 dark:bg-green-900/30",
             )}
           >
-            {getBalanceTitle()}
+            {getBalanceTitle(
+              expensesQuery.data.totalBalance,
+              expensesQuery.data.user.name,
+            )}
           </p>
         </div>
-        <div>
-          <AddExpenseDialogButton participantId={connectionId} />
+        {/* Desktop Add Expense Button */}
+        <div className="hidden md:block">
+          <AddExpenseDialogButton
+            participantId={connectionId}
+            variant="desktop"
+          />
         </div>
       </div>
 
@@ -215,8 +225,6 @@ export function ConnectionsPageContainer({
       </div>
 
       <Separator className="my-4" />
-
-      {/* Loading indicator */}
 
       {/* Expenses List */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -238,15 +246,67 @@ export function ConnectionsPageContainer({
           );
         })}
       </div>
+
+      {/* Mobile Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-50 md:hidden">
+        <AddExpenseDialogButton participantId={connectionId} variant="mobile" />
+      </div>
     </div>
   );
 }
+
+const ExpenseDialogButton = ({
+  variant,
+}: {
+  variant: "desktop" | "mobile";
+}) => {
+  // Scroll-aware state using custom hook
+  const { scrollDirection } = useScrollDirection();
+
+  // Compute showText directly based on scroll direction
+  const showText =
+    scrollDirection === "IDLE" ||
+    scrollDirection === "UP" ||
+    (scrollDirection === "DOWN" && window.scrollY === 0);
+
+  return variant === "desktop" ? (
+    <Button>Add Expense</Button>
+  ) : (
+    <Button
+      className={cn(
+        "h-12 rounded-full shadow-lg transition-all duration-200 ease-out hover:shadow-xl",
+        showText ? "w-36 px-4" : "w-12 px-0",
+      )}
+    >
+      <div className="flex items-center justify-center">
+        <Plus className="h-6 w-6 flex-shrink-0" />
+
+        <span
+          className={cn(
+            "overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out",
+            showText
+              ? "ml-2 max-w-[200px] opacity-100"
+              : "ml-0 max-w-0 opacity-0",
+          )}
+        >
+          Add Expense
+        </span>
+      </div>
+    </Button>
+  );
+};
 
 /**
  * A dialog component that shows a form to add an expense.
  * Utilizes the custom Dialog components from "~/components/ui/dialog".
  */
-function AddExpenseDialogButton({ participantId }: { participantId: string }) {
+function AddExpenseDialogButton({
+  participantId,
+  variant = "mobile",
+}: {
+  participantId: string;
+  variant?: "desktop" | "mobile";
+}) {
   const me = useUser();
   const trpc = useTRPC();
   const [open, setOpen] = useState(false);
@@ -301,7 +361,7 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Add Expense</Button>
+        <ExpenseDialogButton variant={variant} />
       </DialogTrigger>
 
       <DialogContent>
@@ -314,7 +374,7 @@ function AddExpenseDialogButton({ participantId }: { participantId: string }) {
           </DialogHeader>
         </VisuallyHidden>
 
-        <ExpenseForm
+        <AddExpenseForm
           id="add-expense-form"
           initialValues={{
             name: "",
@@ -471,7 +531,7 @@ function EditExpenseDialogButton({
           </DialogHeader>
         </VisuallyHidden>
 
-        <ExpenseForm
+        <AddExpenseForm
           id="edit-expense-form"
           ref={formRef}
           initialValues={{
@@ -557,190 +617,6 @@ function ExpenseItem({
       whoPaid={details.whoPaid}
       whoOwes={details.whoOwes}
       isSplitEqually={details.isSplitEqually}
-      variant="compact"
     />
-  );
-}
-
-function ExpenseForm({
-  initialValues,
-  onSubmit,
-  id,
-  ref,
-  isNewExpense = false,
-  className,
-}: {
-  initialValues: {
-    name: string;
-    category: string;
-    totalCost: number;
-    paymentType: PAYMENT_TYPE;
-  };
-  id: string;
-  onSubmit: (
-    e: React.FormEvent<HTMLFormElement>,
-    value: {
-      name: string;
-      totalCost: number;
-      category: string;
-      paymentType: PAYMENT_TYPE;
-    },
-  ) => void;
-  ref?: React.Ref<HTMLFormElement>;
-  isNewExpense?: boolean;
-  className?: string;
-}) {
-  // Track if category was manually selected
-  const [isManualSelection, setIsManualSelection] = useState(false);
-  const categorySelectRef = useRef<HTMLSelectElement>(null);
-
-  // Handle expense name change
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-
-    // Only suggest categories for new expenses
-    if (isNewExpense && categorySelectRef.current && newName.length >= 3) {
-      // Don't make new suggestions if:
-      // 1. User has manually selected a category (isManualSelection is true)
-      // 2. The current category is not None
-      const currentCategory = categorySelectRef.current.value;
-      const shouldSuggest =
-        !isManualSelection || currentCategory === "None" || !currentCategory;
-
-      if (shouldSuggest) {
-        const suggestedCategory = suggestCategory(newName);
-        if (suggestedCategory) {
-          categorySelectRef.current.value = suggestedCategory;
-        }
-      }
-    }
-  };
-
-  // Handle manual category selection
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCategory = e.target.value;
-    if (selectedCategory === "None" || !selectedCategory) {
-      setIsManualSelection(false);
-    } else {
-      setIsManualSelection(true);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const form = e.currentTarget as HTMLFormElement;
-    const formData = Object.fromEntries(new FormData(form).entries());
-
-    const {
-      "expense-name": name,
-      "expense-totalcost": totalCost,
-      "expense-category": category,
-      "expense-paymentType": paymentType,
-    } = formData;
-
-    if (typeof name !== "string" || name.trim() === "") {
-      alert("Name must be a non-empty string");
-      return;
-    }
-
-    const cost = parseFloat(totalCost as string);
-    if (isNaN(cost)) {
-      alert("Total cost must be a valid number");
-      return;
-    }
-
-    if (typeof category !== "string" || category.trim() === "") {
-      alert("Category must be selected");
-      return;
-    }
-
-    if (typeof paymentType !== "string" || paymentType.trim() === "") {
-      alert("Payment type must be selected");
-      return;
-    }
-
-    onSubmit(e, {
-      name: name.trim(),
-      totalCost: cost,
-      category: category.trim(),
-      paymentType: paymentType.trim() as PAYMENT_TYPE,
-    });
-  };
-
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className={cn("space-y-4", className)}
-      id={id}
-      ref={ref}
-    >
-      <div>
-        <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
-        <Input
-          id={`${id}-totalcost`}
-          name="expense-totalcost"
-          type="number"
-          step="0.01"
-          pattern="[0-9]+(\.[0-9][0-9]?)?"
-          required
-          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
-          defaultValue={
-            initialValues.totalCost === 0 ? "" : initialValues.totalCost
-          }
-        />
-      </div>
-
-      <div>
-        <Label
-          htmlFor={`${id}-name`}
-          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
-        >
-          Name
-        </Label>
-        <Input
-          id={`${id}-name`}
-          name="expense-name"
-          type="text"
-          required
-          defaultValue={initialValues.name}
-          onChange={handleNameChange}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor={`${id}-category`}>Category</Label>
-        <Select
-          id={`${id}-category`}
-          name="expense-category"
-          required
-          defaultValue={initialValues.category}
-          onChange={handleCategoryChange}
-          ref={categorySelectRef}
-        >
-          {CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor={`${id}-paymentType`}>Payment Type</Label>
-        <Select
-          id={`${id}-paymentType`}
-          name="expense-paymentType"
-          required
-          defaultValue={initialValues.paymentType ?? PAYMENT_TYPE_LIST[0]}
-        >
-          {PAYMENT_TYPES_UI_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-    </form>
   );
 }
