@@ -255,13 +255,14 @@ export function ConnectionsPageContainer({
   );
 }
 
+type ExpenseDialogButtonProps = React.ComponentProps<"button"> & {
+  variant: "desktop" | "mobile";
+};
+
 const ExpenseDialogButton = ({
   variant,
   ...rest
-}: {
-  variant: "desktop" | "mobile";
-  rest: React.ComponentProps<typeof Button>;
-}) => {
+}: ExpenseDialogButtonProps) => {
   // Scroll-aware state using custom hook
   const { scrollDirection } = useScrollDirection();
 
