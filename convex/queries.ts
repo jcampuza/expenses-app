@@ -70,9 +70,6 @@ export async function getUsersSharedExpenses(
       .collect(),
   ]);
 
-  console.log("userAExpenses", userAExpenses);
-  console.log("userBExpenses", userBExpenses);
-
   // Find shared expenses (expenses where both users have entries)
   const userAExpenseIds = new Set(userAExpenses.map((e) => e.expenseId));
   const userBExpenseIds = new Set(userBExpenses.map((e) => e.expenseId));

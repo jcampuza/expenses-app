@@ -7,13 +7,12 @@ export class ErrorBoundary extends Component<{
   state = { error: null };
 
   static getDerivedStateFromError(error: Error) {
-    console.error("ERROR BOUNDARY HIT:", error);
+    console.error("getDerivedStateFromError: ERROR BOUNDARY HIT:", error);
     return { error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.log("component did catch");
-    console.error("ERROR BOUNDARY HIT:", error, errorInfo);
+    console.error("componentDidCatch: ERROR BOUNDARY HIT:", error, errorInfo);
   }
 
   render() {

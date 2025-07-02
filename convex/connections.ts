@@ -62,10 +62,12 @@ export const getConnectedUsers = query({
           userIdB: otherUserId,
         });
 
+        const otherUser = await ctx.db.get(otherUserId);
+
         return {
           connectionId: connection._id,
           userId: otherUserId,
-          name: "They",
+          name: otherUser?.name ?? "They",
           totalBalance: sharedExpenses.totalBalance,
         };
       }),

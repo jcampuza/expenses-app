@@ -2,6 +2,7 @@
 
 import { ConnectionsPageLoading } from "~/app/(protected)/dashboard/connection/[connectionId]/ConnectionsPageContent";
 import { usePersistUserEffect } from "~/hooks/use-persist-user";
+import { RedirectToSignIn } from "@clerk/nextjs";
 
 export default function ProtectedLayout({
   children,
@@ -15,7 +16,7 @@ export default function ProtectedLayout({
   }
 
   if (!isAuthenticated) {
-    return <div>Not authenticated</div>;
+    return <RedirectToSignIn />;
   }
 
   return <div>{children}</div>;

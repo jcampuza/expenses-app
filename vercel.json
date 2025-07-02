@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bun run migrate-and-build",
+  "buildCommand": "bunx convex deploy --cmd 'bun run build'",
 
   "crons": [
     {

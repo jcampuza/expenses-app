@@ -108,11 +108,8 @@ export function ConnectionsPageContainer({
   }, [deferredSearchTerm, expensesQuery?.items, fuseSearch]);
 
   if (!expensesQuery || !me) {
-    console.log("Loading connection page", me, expensesQuery);
     return <ConnectionsPageLoading />;
   }
-
-  console.log("Loading connection page", me, expensesQuery);
 
   return (
     <div className="flex-1 p-4">
@@ -158,7 +155,6 @@ export function ConnectionsPageContainer({
       {/* Expenses List */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {searchItemsResponse.map((expenseItem) => {
-          console.log(expenseItem);
           // Determine who paid and if it's split equally
           const currentUserExpense =
             expenseItem.userAExpense.userId === me._id

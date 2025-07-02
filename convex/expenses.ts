@@ -75,8 +75,6 @@ export const getSharedExpenses = query({
       userIdB: otherUserId,
     });
 
-    console.log(sharedExpenses);
-
     return {
       user: { name: otherUser.name },
       totalBalance: sharedExpenses.totalBalance,
@@ -209,7 +207,7 @@ export const updateExpense = mutation({
   handler: async (ctx, args) => {
     const me = await getMeDocument(ctx);
 
-    const { id, connectionId, ...expenseUpdates } = args;
+    const { id, connectionId } = args;
 
     const connection = await ctx.db.get(connectionId);
 
@@ -229,7 +227,14 @@ export const updateExpense = mutation({
       throw new Error("Expense not found");
     }
 
-    await ctx.db.patch(id, expenseUpdates);
+    await ctx.db.patch(id, {
+      category: args.category,
+      totalCost: args.totalCost,
+      paidBy: args.paidBy,
+      currency: args.currency,
+      name: args.name,
+      date: args.date,
+    });
 
     // Get updated expense data
     const updatedExpense = await ctx.db.get(id);
