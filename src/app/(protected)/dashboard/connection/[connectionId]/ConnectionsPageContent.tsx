@@ -25,8 +25,8 @@ import { VisuallyHidden } from "~/components/ui/visually-hidden";
 import { useScrollDirection } from "~/hooks/use-scroll-direction";
 import { CATEGORY } from "~/lib/categories";
 import { cn, formatDollars } from "~/lib/utils";
-import { Id } from "convex/_generated/dataModel";
-import { api } from "convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useConvexMutation } from "~/hooks/use-convex-mutation";
 

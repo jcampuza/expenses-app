@@ -12,8 +12,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { api } from "convex/_generated/api";
-import { Id } from "convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
 
 const ConnectionsSkeleton = () => (
   <div className="space-y-4">

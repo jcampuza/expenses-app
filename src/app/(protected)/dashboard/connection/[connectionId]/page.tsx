@@ -1,4 +1,4 @@
-import { Id } from "convex/_generated/dataModel";
+import { Id } from "@convex/_generated/dataModel";
 import { ConnectionsPageContainer } from "~/app/(protected)/dashboard/connection/[connectionId]/ConnectionsPageContent";
 
 export default async function ConnectionPage({

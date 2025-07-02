@@ -17,7 +17,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { toast, useToast } from "~/hooks/use-toast";
 import { useConvexMutation } from "~/hooks/use-convex-mutation";
-import { api } from "convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type State =
   | { status: "idle"; data: null; invitationLink: null }

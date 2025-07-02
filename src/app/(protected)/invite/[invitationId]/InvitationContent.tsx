@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "~/components/ui/button";
-import { api } from "convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useConvexMutation } from "~/hooks/use-convex-mutation";
 import { useQuery } from "convex/react";
 import { ErrorBoundary } from "~/app/components/ErrorBoundary";

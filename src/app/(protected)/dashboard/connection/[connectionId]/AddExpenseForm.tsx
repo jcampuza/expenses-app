@@ -7,8 +7,8 @@ import { Label } from "~/components/ui/label";
 
 import { CATEGORIES, suggestCategory } from "~/lib/categories";
 import { cn } from "~/lib/utils";
-import { Id } from "convex/_generated/dataModel";
-import { api } from "convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 
 export function AddExpenseForm({
