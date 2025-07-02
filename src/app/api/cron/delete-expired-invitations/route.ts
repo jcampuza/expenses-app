@@ -1,7 +1,5 @@
 import { NextRequest } from "next/server";
 import { env } from "~/env";
-import { db } from "~/server/db";
-import { deleteExpiredInvitations } from "~/server/db/queries";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -11,6 +9,5 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  await deleteExpiredInvitations(db);
-  return new Response("OK");
+  return null;
 }

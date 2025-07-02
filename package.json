@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.11.1",
+    "@convex-dev/react-query": "^0.0.0-alpha.11",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-separator": "^1.1.2",
@@ -38,6 +39,8 @@
     "babel-plugin-react-compiler": "^19.0.0-beta-e1e972c-20250221",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.25.0",
+    "convex-helpers": "^0.1.95",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.40.0",
     "drizzle-seed": "^0.3.1",

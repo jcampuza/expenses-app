@@ -1,8 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { UserResource } from "@clerk/types";
-import { useMutation } from "@tanstack/react-query";
+
 import { Loader2, QrCode, Delete } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -17,7 +16,8 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { toast, useToast } from "~/hooks/use-toast";
-import { useTRPC } from "~/trpc/utils";
+import { useConvexMutation } from "~/hooks/use-convex-mutation";
+import { api } from "convex/_generated/api";
 
 type State =
   | { status: "idle"; data: null; invitationLink: null }
@@ -49,7 +49,7 @@ export default function SettingsForm() {
 
       <div className="flex flex-col gap-4">
         <div>
-          <GenerateInvitationDialog user={user.user} />
+          <GenerateInvitationDialog />
         </div>
 
         <div>
@@ -64,10 +64,9 @@ function ExpireInvitationsDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const trpc = useTRPC();
-
-  const expireInvitations = useMutation(
-    trpc.invitation.expireAllInvitations.mutationOptions({
+  const { mutate: expireInvitations, isPending } = useConvexMutation(
+    api.invitations.expireAllInvitations,
+    {
       onSuccess: () => {
         setOpen(false);
         toast({
@@ -75,7 +74,14 @@ function ExpireInvitationsDialog() {
           description: "All invitations have been expired.",
         });
       },
-    }),
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      },
+    },
   );
 
   return (
@@ -98,11 +104,9 @@ function ExpireInvitationsDialog() {
             Cancel
           </Button>
 
-          <Button type="submit" onClick={() => expireInvitations.mutateAsync()}>
+          <Button type="submit" onClick={() => expireInvitations()}>
             Expire
-            {expireInvitations.isPending ? (
-              <Loader2 className="animate-spin" />
-            ) : null}
+            {isPending ? <Loader2 className="animate-spin" /> : null}
           </Button>
         </div>
       </DialogContent>
@@ -110,35 +114,42 @@ function ExpireInvitationsDialog() {
   );
 }
 
-function GenerateInvitationDialog({ user }: { user: UserResource }) {
+function GenerateInvitationDialog() {
   const [state, setState] = useState<State>({
     status: "idle",
     data: null,
     invitationLink: null,
   });
 
-  const trpc = useTRPC();
-  const { mutateAsync } = useMutation(
-    trpc.invitation.getInviationLink.mutationOptions(),
+  const { mutate: getInvitationLink, isPending } = useConvexMutation(
+    api.invitations.getInvitationLink,
   );
 
   const generateQRCode = async () => {
     setState({ status: "loading", data: null, invitationLink: null });
 
     try {
-      const dataFromMutation = await mutateAsync({
-        inviterUserId: user.id,
-      });
-      const invitationLink = dataFromMutation.invitationLink;
-      const { renderSVG } = await import("uqr");
-      const svg = renderSVG(`${window.location.hostname}${invitationLink}`);
-      setState({
-        status: "ready",
-        data: svg,
-        invitationLink: `${window.location.hostname}${invitationLink}`,
-      });
-    } catch {
+      const dataFromMutation = await getInvitationLink();
+
+      if (dataFromMutation) {
+        const invitationLink = dataFromMutation.invitationLink;
+        const { renderSVG } = await import("uqr");
+        const svg = renderSVG(`${window.location.host}${invitationLink}`);
+        setState({
+          status: "ready",
+          data: svg,
+          invitationLink: `${window.location.host}${invitationLink}`,
+        });
+      } else {
+        setState({ status: "idle", data: null, invitationLink: null });
+      }
+    } catch (error) {
       setState({ status: "idle", data: null, invitationLink: null });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
     }
   };
 
@@ -159,7 +170,7 @@ function GenerateInvitationDialog({ user }: { user: UserResource }) {
         <Button onClick={() => generateQRCode()} className="flex">
           <QrCode className="mr-2 h-4 w-4" />
           Generate Account QR Code
-          {state.status === "loading" ? (
+          {state.status === "loading" || isPending ? (
             <Loader2 className="animate-spin" />
           ) : null}
         </Button>
@@ -188,7 +199,12 @@ function GenerateInvitationDialog({ user }: { user: UserResource }) {
                     .then(() => {
                       toast({
                         title: "Copied to clipboard",
-                        description: "Invitation link copied to clipboard",
+                        description: (
+                          <>
+                            Invitation link copied to clipboard:{" "}
+                            {state.invitationLink}
+                          </>
+                        ),
                         duration: 3000,
                       });
                     });

@@ -2,11 +2,11 @@ import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import "~/styles/globals.css";
 
-import { ClerkProvider } from "@clerk/nextjs";
-import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "~/components/ui/toaster";
 import { Header } from "~/app/components/Header";
 import Footer from "~/app/components/Footer";
+import ConvexClientProvider from "~/components/ConvextAuthProvider";
+import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
   title: "ExpenseMate",
@@ -19,10 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" className={`${GeistSans.variable}`}>
-        <body>
-          <TRPCReactProvider>
+    <html lang="en" className={`${GeistSans.variable}`}>
+      <body>
+        <ClerkProvider>
+          <ConvexClientProvider>
             <div className="flex flex-col">
               <div className="flex min-h-screen flex-col">
                 <Header />
@@ -32,10 +32,11 @@ export default function RootLayout({
                 <Footer />
               </div>
             </div>
-          </TRPCReactProvider>
-          <Toaster />
-        </body>
-      </html>
-    </ClerkProvider>
+
+            <Toaster />
+          </ConvexClientProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }
