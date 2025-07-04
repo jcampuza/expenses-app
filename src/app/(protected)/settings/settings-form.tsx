@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 
-import { Loader2, QrCode, Delete } from "lucide-react";
+import { Loader2, QrCode, Delete, MoreHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -13,11 +13,38 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { toast, useToast } from "~/hooks/use-toast";
 import { useConvexMutation } from "~/hooks/use-convex-mutation";
+import { useConvexQuery } from "~/hooks/useConvexQuery";
 import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
 
 type State =
   | { status: "idle"; data: null; invitationLink: null }
@@ -55,6 +82,11 @@ export default function SettingsForm() {
         <div>
           <ExpireInvitationsDialog />
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="mb-4 text-lg font-semibold">Connected Users</h2>
+        <ConnectedUsersTable />
       </div>
     </div>
   );
@@ -169,7 +201,7 @@ function GenerateInvitationDialog() {
       <DialogTrigger asChild>
         <Button onClick={() => generateQRCode()} className="flex">
           <QrCode className="mr-2 h-4 w-4" />
-          Generate Account QR Code
+          Generate Connection QR Code
           {state.status === "loading" || isPending ? (
             <Loader2 className="animate-spin" />
           ) : null}
@@ -177,7 +209,9 @@ function GenerateInvitationDialog() {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Your Account QR Code</DialogTitle>
+          <DialogTitle className="text-center">
+            Your Connection QR Code
+          </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center p-4">
           {state.data ? (
@@ -220,5 +254,141 @@ function GenerateInvitationDialog() {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ConnectedUsersTable() {
+  const { data: connectedUsers, isPending } = useConvexQuery(
+    api.connections.getConnectedUsersForSettings,
+  );
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!connectedUsers || connectedUsers.length === 0) {
+    return (
+      <div className="rounded-lg border p-6 text-center text-muted-foreground">
+        No connected users found. Generate an invitation to connect with others.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Connected Since</TableHead>
+            <TableHead className="w-12"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {connectedUsers.map((user) => (
+            <TableRow key={user.connectionId}>
+              <TableCell className="font-medium">{user.name}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {user.email || "N/A"}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {new Date(user.connectedAt).toLocaleDateString()}
+              </TableCell>
+              <TableCell>
+                <ConnectionActionsDropdown
+                  connectionId={user.connectionId}
+                  userName={user.name}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function ConnectionActionsDropdown({
+  connectionId,
+  userName,
+}: {
+  connectionId: Id<"user_connections">;
+  userName: string;
+}) {
+  const { toast } = useToast();
+
+  const { mutate: deleteConnection, isPending } = useConvexMutation(
+    api.connections.deleteConnection,
+    {
+      onSuccess: () => {
+        toast({
+          title: "Connection Removed",
+          description: `Connection with ${userName} has been removed.`,
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      },
+    },
+  );
+
+  const handleDeleteConnection = () => {
+    deleteConnection({ connectionId });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Remove connection
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Connection</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove your connection with {userName}?
+                This action cannot be undone and will delete all shared expenses
+                between you and {userName}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConnection}
+                disabled={isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  "Remove Connection"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

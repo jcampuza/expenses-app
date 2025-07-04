@@ -70,12 +70,12 @@ const ConnectionListItem = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {totalBalance > 0 ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
-                <TrendingDown className="h-5 w-5" />
-              </div>
-            ) : totalBalance < 0 ? (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30">
                 <TrendingUp className="h-5 w-5" />
+              </div>
+            ) : totalBalance < 0 ? (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
+                <TrendingDown className="h-5 w-5" />
               </div>
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800">
@@ -86,12 +86,12 @@ const ConnectionListItem = ({
             <div>
               <h3 className="font-medium">{name}</h3>
               {totalBalance > 0 ? (
-                <p className="text-sm text-red-600 dark:text-green-400">
-                  You owe {formatDollars(Math.abs(totalBalance))}
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Owes you {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : totalBalance < 0 ? (
-                <p className="text-sm text-green-600 dark:text-red-400">
-                  Owes you {formatDollars(Math.abs(totalBalance))}
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  You owe {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">

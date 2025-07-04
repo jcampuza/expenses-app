@@ -1,5 +1,6 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getMeDocument } from "./helpers";
 
 // Get an invitation link for a user
 export const getInvitationLink = mutation({
@@ -7,20 +8,12 @@ export const getInvitationLink = mutation({
     invitationLink: v.string(),
   }),
   handler: async (ctx) => {
-    const me = await ctx.auth.getUserIdentity();
-    if (!me) {
-      throw new Error("Not authenticated");
-    }
+    const me = await getMeDocument(ctx);
 
-    const inviter = await ctx.db
-      .query("users")
-      .withIndex("by_token_identifier", (q) =>
-        q.eq("tokenIdentifier", me.tokenIdentifier),
-      )
-      .unique();
+    const inviter = await ctx.db.get(me._id);
 
     if (!inviter) {
-      throw new Error("Inviter not found");
+      throw new Error("Inviter not founddddd");
     }
 
     // Generate a unique token
@@ -88,11 +81,7 @@ export const getInvitation = query({
   handler: async (ctx, args) => {
     const { token } = args;
 
-    // Get the current user's identity
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    const me = await getMeDocument(ctx);
 
     // Find the invitation
     const invitation = await ctx.db
@@ -105,20 +94,14 @@ export const getInvitation = query({
     }
 
     // Check if the invitation is for the current user
-    if (invitation.inviterUserId === identity.subject) {
+    if (invitation.inviterUserId === me._id) {
       throw new Error("You cannot accept your own invitation");
     }
 
     // Get the inviter's information
-    const inviter = await ctx.db
-      .query("users")
-      .withIndex("by_token_identifier", (q) =>
-        q.eq("tokenIdentifier", invitation.inviterUserId),
-      )
-      .unique();
-
+    const inviter = await ctx.db.get(invitation.inviterUserId);
     if (!inviter) {
-      throw new Error("Inviter not found");
+      throw new Error("Inviter not foundddddd");
     }
 
     return {
@@ -145,11 +128,7 @@ export const acceptInvitation = mutation({
   handler: async (ctx, args) => {
     const { token } = args;
 
-    // Get the current user's identity
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    const me = await getMeDocument(ctx);
 
     // Find the invitation
     const invitation = await ctx.db
@@ -175,19 +154,8 @@ export const acceptInvitation = mutation({
       throw new Error("Inviter not found");
     }
 
-    const invitee = await ctx.db
-      .query("users")
-      .withIndex("by_token_identifier", (q) =>
-        q.eq("tokenIdentifier", identity.tokenIdentifier),
-      )
-      .unique();
-
-    if (!invitee) {
-      throw new Error("Invitee not found");
-    }
-
     // Check if the invitation is for the current user
-    if (inviter.tokenIdentifier === identity.tokenIdentifier) {
+    if (inviter._id === me._id) {
       throw new Error("You cannot accept your own invitation");
     }
 
@@ -199,7 +167,7 @@ export const acceptInvitation = mutation({
     // Create a connection between the users
     await ctx.db.insert("user_connections", {
       inviterUserId: inviter._id,
-      inviteeUserId: invitee._id,
+      inviteeUserId: me._id,
       acceptedAt: new Date().toISOString(),
     });
 

@@ -50,12 +50,12 @@ const getWhoPaidExpenseDetails = (
 
 const getBalanceTitle = (totalBalance: number, userName?: string | null) => {
   if (totalBalance > 0) {
-    return `You owe ${formatDollars(Math.abs(totalBalance))}`;
+    const theirName = userName ?? "They";
+    return `${theirName} owes ${formatDollars(Math.abs(totalBalance))}`;
   }
 
   if (totalBalance < 0) {
-    const theirName = userName ?? "Them";
-    return `${theirName} owes ${formatDollars(Math.abs(totalBalance))}`;
+    return `You owe ${formatDollars(Math.abs(totalBalance))}`;
   }
 
   return "All debts settled";
@@ -121,9 +121,9 @@ export function ConnectionsPageContainer({
             className={cn(
               "mb-4",
               expensesQuery.totalBalance > 0 &&
-                "text-red-600 dark:bg-red-900/30",
+                "text-green-600 dark:text-green-400",
               expensesQuery.totalBalance < 0 &&
-                "text-green-600 dark:bg-green-900/30",
+                "text-red-600 dark:text-red-400",
             )}
           >
             {getBalanceTitle(
