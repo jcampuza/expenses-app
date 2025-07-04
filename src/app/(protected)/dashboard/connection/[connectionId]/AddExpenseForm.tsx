@@ -10,6 +10,7 @@ import { cn } from "~/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
+import { Loader2 } from "lucide-react";
 
 export function AddExpenseForm({
   initialValues,
@@ -135,6 +136,14 @@ export function AddExpenseForm({
         ? { _id: connection.inviteeUserId, name: "Other User" }
         : { _id: connection.inviterUserId, name: "Other User" }
       : null;
+
+  if (!me || !otherUser) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <form
