@@ -1,11 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
 import Link from "next/link";
 import { buttonVariants } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { formatDollars } from "~/lib/utils";
-import { useTRPC } from "~/trpc/utils";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -13,6 +12,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
 
 const ConnectionsSkeleton = () => (
   <div className="space-y-4">
@@ -50,31 +51,31 @@ const ConnectionsEmpty = () => {
 };
 
 interface ConnectionListItemProps {
-  userId: string;
+  connectionId: Id<"user_connections">;
   name: string;
   totalBalance: number;
 }
 
 const ConnectionListItem = ({
-  userId,
+  connectionId,
   name,
   totalBalance,
 }: ConnectionListItemProps) => {
   return (
     <li>
       <Link
-        href={`/dashboard/connection/${userId}`}
+        href={`/dashboard/connection/${connectionId}`}
         className="block transform rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md dark:border-gray-800 dark:bg-gray-950"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {totalBalance > 0 ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
-                <TrendingDown className="h-5 w-5" />
-              </div>
-            ) : totalBalance < 0 ? (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30">
                 <TrendingUp className="h-5 w-5" />
+              </div>
+            ) : totalBalance < 0 ? (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
+                <TrendingDown className="h-5 w-5" />
               </div>
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800">
@@ -85,12 +86,12 @@ const ConnectionListItem = ({
             <div>
               <h3 className="font-medium">{name}</h3>
               {totalBalance > 0 ? (
-                <p className="text-sm text-red-600 dark:text-green-400">
-                  You owe {formatDollars(Math.abs(totalBalance))}
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Owes you {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : totalBalance < 0 ? (
-                <p className="text-sm text-green-600 dark:text-red-400">
-                  Owes you {formatDollars(Math.abs(totalBalance))}
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  You owe {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -108,17 +109,13 @@ const ConnectionListItem = ({
 };
 
 export function ConnectionsList() {
-  const trpc = useTRPC();
+  const connectedUsers = useQuery(api.connections.getConnectedUsers);
 
-  const connectionsQuery = useQuery(
-    trpc.connections.getConnectedUsers.queryOptions(),
-  );
-
-  if (connectionsQuery.isLoading) {
+  if (!connectedUsers) {
     return <ConnectionsSkeleton />;
   }
 
-  if (connectionsQuery.data?.users.length === 0) {
+  if (connectedUsers.length === 0) {
     return <ConnectionsEmpty />;
   }
 
@@ -126,10 +123,10 @@ export function ConnectionsList() {
     <div className="space-y-4">
       <h2 className="mb-4 text-xl font-semibold">Your Connections</h2>
       <ul className="space-y-3">
-        {connectionsQuery.data?.users.map((user) => (
+        {connectedUsers.map((user) => (
           <ConnectionListItem
-            key={user.userId}
-            userId={user.userId}
+            key={user.connectionId}
+            connectionId={user.connectionId}
             name={user.name}
             totalBalance={user.totalBalance}
           />
