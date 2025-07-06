@@ -8,18 +8,6 @@ const config = {
   extends: ["next/core-web-vitals", "plugin:@typescript-eslint/strict"],
   rules: {
     "@typescript-eslint/no-unused-vars": "error",
-    // "drizzle/enforce-delete-with-where": [
-    //   "error",
-    //   {
-    //     drizzleObjectName: ["db", "ctx.db"],
-    //   },
-    // ],
-    // "drizzle/enforce-update-with-where": [
-    //   "error",
-    //   {
-    //     drizzleObjectName: ["db", "ctx.db"],
-    //   },
-    // ],
   },
 };
 module.exports = config;
