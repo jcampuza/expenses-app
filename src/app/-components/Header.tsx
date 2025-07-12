@@ -24,7 +24,7 @@ export function Header() {
           className="inline-flex items-center gap-2 text-black"
         >
           <img
-            src="/logo.png"
+            src="/logo.webp"
             width={40}
             height={40}
             alt="Expenses App Logo"

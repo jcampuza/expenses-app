@@ -11,7 +11,7 @@ function RouteComponent() {
     <div className="flex flex-col">
       <main className="mt-12 flex grow flex-col items-center justify-center p-4 text-center">
         <img
-          src="/logo.png"
+          src="/logo.webp"
           alt="Expenses App Illustration"
           width={150}
           height={150}
