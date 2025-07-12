@@ -1,6 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@convex/_generated/api";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Id } from "node_modules/convex/dist/esm-types/values/value";
 import { LoadingComponent } from "~/app/-components/LoadingComponent";
 import { ConnectionsPageContainer } from "~/app/_protected/dashboard/connection/$connectionId/-ConnectionsPageContent";

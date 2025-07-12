@@ -70,11 +70,11 @@ export async function getUsersSharedExpenses(
       .collect(),
   ]);
 
-  // Find shared expenses (expenses where both users have entries)
-  const userAExpenseIds = new Set(userAExpenses.map((e) => e.expenseId));
-  const userBExpenseIds = new Set(userBExpenses.map((e) => e.expenseId));
-  const sharedExpenseIds = [...userAExpenseIds].filter((id) =>
-    userBExpenseIds.has(id),
+  const userAExpenseMap = new Map(userAExpenses.map((e) => [e.expenseId, e]));
+  const userBExpenseMap = new Map(userBExpenses.map((e) => [e.expenseId, e]));
+
+  const sharedExpenseIds = Array.from(userAExpenseMap.keys()).filter((id) =>
+    userBExpenseMap.has(id),
   );
 
   // Get the actual expense documents for shared expenses
@@ -95,8 +95,8 @@ export async function getUsersSharedExpenses(
   }> = [];
 
   for (const expense of validExpenses) {
-    const userAExpense = userAExpenses.find((e) => e.expenseId === expense._id);
-    const userBExpense = userBExpenses.find((e) => e.expenseId === expense._id);
+    const userAExpense = userAExpenseMap.get(expense._id);
+    const userBExpense = userBExpenseMap.get(expense._id);
 
     if (!userAExpense || !userBExpense) continue;
 
@@ -112,6 +112,13 @@ export async function getUsersSharedExpenses(
       userBBalance,
     });
   }
+
+  // Sort shared expenses by date in descending order (latest first)
+  shared.sort((a, b) => {
+    const dateA = new Date(a.expense.date);
+    const dateB = new Date(b.expense.date);
+    return dateB.getTime() - dateA.getTime();
+  });
 
   // Calculate total balance: positive means userA is owed money, negative means userA owes money
   const totalBalance = shared.reduce((sum, item) => sum + item.userABalance, 0);

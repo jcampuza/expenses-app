@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 
 export type ScrollDirection = "UP" | "DOWN" | "IDLE";
