@@ -1,29 +1,64 @@
-# Create T3 App
+# Expense Web App
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+This is a web application for tracking expenses, built with a modern tech stack.
 
-## What's next? How do I make an app with this?
+I primarily built this to track expenses between me and my partner as an alternative to Splitwise. I got annoyed that SplitWise has added more and more ads, adding any expense requires waiting for an ad now unless you have the pro plan. Thats stupid. So I built this just for us.
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+It should work for anybody and you can host it yourself. Our version is hosted at `https://expensemate.fyi`
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+Recommended to host on vercel since thats what this is setup for but is possible to just update the vite config/tanstack output to whatever tanstack supports.
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+## Tech Stack
 
-## Learn More
+This project is built with the following technologies:
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+- **Framework**: [TanStack Start](https://tanstack.com/start) with [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Backend**: [Convex](https://convex.dev/)
+- **Authentication**: [Clerk](https://clerk.com/)
+- **Routing**: [TanStack Router](https://tanstack.com/router/v1)
+- **Data Fetching**: [TanStack Query](https://tanstack.com/query/v5)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/guide/packages/lucide-react)
+- **Runtime**: [Bun](https://bun.sh/)
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+## Getting Started
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+To get a local copy up and running, follow these simple steps.
 
-## How do I deploy this?
+### Prerequisites
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+You need to have [Bun](https://bun.sh/) installed on your machine.
+
+### Installation & Setup
+
+1.  Clone the repo
+2.  Install
+    ```sh
+    bun install
+    ```
+3.  Set up your environment variables. You'll need to create a `.env.local` file and add your Convex and Clerk credentials.
+    ```
+    CLERK_SECRET_KEY=
+    VITE_CLERK_FRONTEND_API_URL
+    VITE_CLERK_PUBLISHABLE_KEY=...
+    VITE_CONVEX_URL=...
+    CONVEX_DEPLOYMENT=... (normally autofilled by convex dev)
+    ```
+
+### Running the Development Server
+
+You can run the development server, which will start both the Vite dev server and the Convex dev server.
+
+```sh
+bun run dev
+```
+
+## Deployment
+
+This application is configured for deployment on [Vercel](https://vercel.com/), but you can deploy it to any hosting provider that supports Node.js applications.
+
+## Other
+
+A decent amount of this was developed with the assistance of AI tools like Cursor.
