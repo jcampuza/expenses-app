@@ -5,8 +5,8 @@ import { spawn } from "bun";
 const COLORS: Record<string, string> = {
   "convex:stdout": "\x1b[34m", // blue
   "convex:stderr": "\x1b[34m",
-  "next:stdout": "\x1b[32m", // green
-  "next:stderr": "\x1b[32m",
+  "vite:stdout": "\x1b[32m", // green
+  "vite:stderr": "\x1b[32m",
 };
 const RESET = "\x1b[0m";
 
@@ -16,7 +16,7 @@ async function run() {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const next = spawn(["bun", "run", "dev:next"], {
+  const next = spawn(["bun", "run", "dev:vite"], {
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -58,8 +58,8 @@ async function run() {
   const streams = [
     { prefix: "convex:stdout", stream: convex.stdout },
     { prefix: "convex:stderr", stream: convex.stderr },
-    { prefix: "next:stdout", stream: next.stdout },
-    { prefix: "next:stderr", stream: next.stderr },
+    { prefix: "vite:stdout", stream: next.stdout },
+    { prefix: "vite:stderr", stream: next.stderr },
   ].filter(
     (s): s is { prefix: string; stream: ReadableStream<Uint8Array> } =>
       s.stream !== undefined,

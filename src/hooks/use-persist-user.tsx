@@ -5,6 +5,10 @@ import { useMutation } from "convex/react";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 
+export type AuthState = {
+  userId: Id<"users"> | null;
+};
+
 export function usePersistUserEffect() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const { user } = useUser();
@@ -37,5 +41,8 @@ export function usePersistUserEffect() {
   return {
     isLoading: isLoading || (isAuthenticated && userId === null),
     isAuthenticated: isAuthenticated && userId !== null,
+    authState: {
+      userId,
+    },
   };
 }

@@ -10,10 +10,8 @@ export const getInvitationLink = mutation({
   handler: async (ctx) => {
     const me = await getMeDocument(ctx);
 
-    const inviter = await ctx.db.get(me._id);
-
-    if (!inviter) {
-      throw new Error("Inviter not founddddd");
+    if (!me) {
+      throw new Error("Inviter not found");
     }
 
     // Generate a unique token
@@ -24,7 +22,7 @@ export const getInvitationLink = mutation({
     await ctx.db.insert("invitations", {
       isUsed: false,
       token,
-      inviterUserId: inviter._id,
+      inviterUserId: me._id,
       createdAt: new Date().toISOString(),
       expirationTime: expirationTime.toISOString(),
     });
@@ -101,7 +99,19 @@ export const getInvitation = query({
     // Get the inviter's information
     const inviter = await ctx.db.get(invitation.inviterUserId);
     if (!inviter) {
-      throw new Error("Inviter not foundddddd");
+      throw new Error("Inviter not found");
+    }
+
+    // Check if the users are already connected
+    const connection = await ctx.db
+      .query("user_connections")
+      .withIndex("by_inviter_and_invitee", (q) =>
+        q.eq("inviterUserId", inviter._id).eq("inviteeUserId", me._id),
+      )
+      .unique();
+
+    if (connection) {
+      throw new Error("You are already connected to this user");
     }
 
     return {
