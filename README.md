@@ -8,6 +8,8 @@ It should work for anybody and you can host it yourself. Our version is hosted a
 
 Recommended to host on vercel since thats what this is setup for but is possible to just update the vite config/tanstack output to whatever tanstack supports.
 
+Note this was migrated from Next.js to Tanstack and I haven't had time to completely reconfigure the folder structure, so some of it still looks similar to next.js routing config.
+
 ## Tech Stack
 
 This project is built with the following technologies:
