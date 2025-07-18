@@ -1,4 +1,4 @@
-import { SkeletonCard } from "~/app/-components/Skeletons";
+import { SkeletonCard, SkeletonFormField } from "~/app/-components/Skeletons";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 
@@ -15,6 +15,17 @@ export const LoadingComponent = () => {
         <SkeletonCard />
         <SkeletonCard />
       </div>
+    </div>
+  );
+};
+
+export const LoadingFormComponent = () => {
+  return (
+    <div className="space-y-4">
+      <SkeletonFormField />
+      <SkeletonFormField />
+      <SkeletonFormField />
+      <SkeletonFormField />
     </div>
   );
 };

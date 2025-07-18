@@ -10,6 +10,38 @@ const COLORS: Record<string, string> = {
 };
 const RESET = "\x1b[0m";
 
+// a TransformStream that splits incoming strings into lines
+function makeLineSplitter() {
+  let buffer = "";
+  return new TransformStream<string, string>({
+    transform(chunk, ctrl) {
+      buffer += chunk;
+      const parts = buffer.split("\n");
+      buffer = parts.pop() ?? "";
+      for (const line of parts) {
+        ctrl.enqueue(line);
+      }
+    },
+    flush(ctrl) {
+      if (buffer.length) ctrl.enqueue(buffer);
+    },
+  });
+}
+
+// given a Uint8Array stream, turn it into an async-iterable of lines
+function lines(
+  stream: ReadableStream<Uint8Array>,
+  prefix: string,
+): AsyncIterable<string> {
+  return (async function* () {
+    const textStream = stream.pipeThrough(new TextDecoderStream());
+    const lineStream = textStream.pipeThrough(makeLineSplitter());
+    for await (const line of lineStream) {
+      yield `[${prefix}] ${line}`;
+    }
+  })();
+}
+
 async function run() {
   const convex = spawn(["bun", "run", "dev:convex"], {
     // make sure we get pipe-style streams
@@ -21,40 +53,7 @@ async function run() {
     stderr: "pipe",
   });
 
-  // a TransformStream that splits incoming strings into lines
-  function makeLineSplitter() {
-    let buffer = "";
-    return new TransformStream<string, string>({
-      transform(chunk, ctrl) {
-        buffer += chunk;
-        const parts = buffer.split("\n");
-        buffer = parts.pop() ?? "";
-        for (const line of parts) {
-          ctrl.enqueue(line);
-        }
-      },
-      flush(ctrl) {
-        if (buffer.length) ctrl.enqueue(buffer);
-      },
-    });
-  }
-
-  // given a Uint8Array stream, turn it into an async-iterable of lines
-  function lines(
-    stream: ReadableStream<Uint8Array>,
-    prefix: string,
-  ): AsyncIterable<string> {
-    return (async function* () {
-      const textStream = stream.pipeThrough(new TextDecoderStream());
-      const lineStream = textStream.pipeThrough(makeLineSplitter());
-      for await (const line of lineStream) {
-        yield `[${prefix}] ${line}`;
-      }
-    })();
-  }
-
   // set up four log-tasks (stdout+stderr for each process)
-
   const streams = [
     { prefix: "convex:stdout", stream: convex.stdout },
     { prefix: "convex:stderr", stream: convex.stderr },
@@ -80,6 +79,7 @@ async function run() {
     next.kill();
     process.exit(0);
   };
+
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 

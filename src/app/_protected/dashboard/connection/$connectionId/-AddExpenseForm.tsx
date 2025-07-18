@@ -3,14 +3,16 @@
 import { useRef, useState } from "react";
 
 import { Input, Select } from "~/components/ui/input";
+import { NumberInput } from "~/components/NumberInput";
 import { Label } from "~/components/ui/label";
 
 import { CATEGORIES, suggestCategory } from "~/lib/categories";
 import { cn } from "~/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import { SkeletonFormField } from "~/app/-components/Skeletons";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 
 export function AddExpenseForm({
   initialValues,
@@ -48,10 +50,12 @@ export function AddExpenseForm({
   const [isManualSelection, setIsManualSelection] = useState(false);
   const categorySelectRef = useRef<HTMLSelectElement>(null);
 
-  const me = useQuery(api.user.getCurrentUser);
-  const connection = useQuery(api.connections.getConnectionById, {
-    id: connectionId,
-  });
+  const me = useSuspenseQuery(convexQuery(api.user.getCurrentUser, {}));
+  const connection = useSuspenseQuery(
+    convexQuery(api.connections.getConnectionById, {
+      id: connectionId,
+    }),
+  );
 
   // Handle expense name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,9 +136,9 @@ export function AddExpenseForm({
   // Get the other user in the connection
   const otherUser =
     connection && me
-      ? connection.inviterUserId === me._id
-        ? { _id: connection.inviteeUserId, name: "Other User" }
-        : { _id: connection.inviterUserId, name: "Other User" }
+      ? connection.data?.inviterUserId === me.data?._id
+        ? { _id: connection.data?.inviteeUserId, name: "Other User" }
+        : { _id: connection.data?.inviterUserId, name: "Other User" }
       : null;
 
   if (!me || !otherUser) {
@@ -158,12 +162,10 @@ export function AddExpenseForm({
     >
       <div>
         <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
-        <Input
+        <NumberInput
           id={`${id}-totalcost`}
           name="expense-totalcost"
-          type="number"
-          step="0.01"
-          pattern="[0-9]+(\.[0-9][0-9]?)?"
+          allowDecimal={true}
           required
           className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
           defaultValue={
@@ -215,7 +217,7 @@ export function AddExpenseForm({
           required
           defaultValue={initialValues.paidBy}
         >
-          {me && <option value={me._id}>You</option>}
+          {me && <option value={me.data?._id}>You</option>}
           {otherUser && <option value={otherUser._id}>Them</option>}
         </Select>
       </div>

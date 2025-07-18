@@ -200,7 +200,7 @@ function GenerateInvitationDialog() {
       <DialogTrigger asChild>
         <Button onClick={() => generateQRCode()} className="flex">
           <QrCode className="mr-2 h-4 w-4" />
-          Generate Connection QR Code
+          Generate Invitation QR Code
           {state.status === "loading" || isPending ? (
             <Loader2 className="animate-spin" />
           ) : null}
@@ -209,7 +209,7 @@ function GenerateInvitationDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-center">
-            Your Connection QR Code
+            Your Invitation QR Code
           </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center p-4">

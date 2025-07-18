@@ -4,7 +4,7 @@ import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 
 import Fuse from "fuse.js";
 import { Plus } from "lucide-react";
-import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { Suspense, useDeferredValue, useMemo, useRef, useState } from "react";
 import ExpenseCard from "~/components/ExpenseCard";
 import { Button } from "~/components/ui/button";
 
@@ -29,6 +29,7 @@ import { useQuery } from "convex/react";
 import { useConvexMutation } from "~/hooks/use-convex-mutation";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
+import { LoadingFormComponent } from "~/app/-components/LoadingComponent";
 
 const getWhoPaidExpenseDetails = (
   currentUserId: Id<"users">,
@@ -280,48 +281,50 @@ function AddExpenseDialogButton({
       <DialogContent>
         <VisuallyHidden>
           <DialogHeader>
-            <DialogTitle>Add Expense</DialogTitle>
+            <DialogTitle>Add Expense</DialogTitle>´
             <DialogDescription>
               Fill in the expense details below.
             </DialogDescription>
           </DialogHeader>
         </VisuallyHidden>
 
-        <AddExpenseForm
-          id="add-expense-form"
-          initialValues={{
-            name: "",
-            category: CATEGORY.None,
-            totalCost: 0,
-            paidBy: me?._id ?? ("" as Id<"users">),
-            splitEqually: true,
-          }}
-          onSubmit={handleSubmit}
-          ref={formRef}
-          isNewExpense={true}
-          connectionId={connectionId}
-        />
+        <Suspense fallback={<LoadingFormComponent />}>
+          <AddExpenseForm
+            id="add-expense-form"
+            initialValues={{
+              name: "",
+              category: CATEGORY.None,
+              totalCost: 0,
+              paidBy: me?._id ?? ("" as Id<"users">),
+              splitEqually: true,
+            }}
+            onSubmit={handleSubmit}
+            ref={formRef}
+            isNewExpense={true}
+            connectionId={connectionId}
+          />
 
-        <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-          <DialogClose asChild>
+          <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+            </DialogClose>
             <Button
-              type="button"
-              variant="outline"
+              type="submit"
+              form="add-expense-form"
+              disabled={addExpenseMutation.isPending}
+              variant="default"
               className="w-full sm:w-auto"
             >
-              Cancel
+              {addExpenseMutation.isPending ? "Submitting..." : "Submit"}
             </Button>
-          </DialogClose>
-          <Button
-            type="submit"
-            form="add-expense-form"
-            disabled={addExpenseMutation.isPending}
-            variant="default"
-            className="w-full sm:w-auto"
-          >
-            {addExpenseMutation.isPending ? "Submitting..." : "Submit"}
-          </Button>
-        </div>
+          </div>
+        </Suspense>
       </DialogContent>
     </Dialog>
   );
@@ -433,51 +436,53 @@ function EditExpenseDialogButton({
           </DialogHeader>
         </VisuallyHidden>
 
-        <AddExpenseForm
-          id="edit-expense-form"
-          ref={formRef}
-          initialValues={{
-            name: name,
-            category: category ?? CATEGORY.None,
-            totalCost: totalCost,
-            paidBy: paidBy,
-            splitEqually: splitEqually,
-          }}
-          onSubmit={handleSubmit}
-          isNewExpense={false}
-          connectionId={connectionId}
-        />
+        <Suspense fallback={<LoadingFormComponent />}>
+          <AddExpenseForm
+            id="edit-expense-form"
+            ref={formRef}
+            initialValues={{
+              name: name,
+              category: category ?? CATEGORY.None,
+              totalCost: totalCost,
+              paidBy: paidBy,
+              splitEqually: splitEqually,
+            }}
+            onSubmit={handleSubmit}
+            isNewExpense={false}
+            connectionId={connectionId}
+          />
 
-        <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-          <DialogClose asChild>
+          <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={actionIsInProgress}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+
             <Button
+              variant="destructive"
               type="button"
-              variant="outline"
+              onClick={handleDelete}
               disabled={actionIsInProgress}
               className="w-full sm:w-auto"
             >
-              Cancel
+              {deleteExpenseMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
-          </DialogClose>
-
-          <Button
-            variant="destructive"
-            type="button"
-            onClick={handleDelete}
-            disabled={actionIsInProgress}
-            className="w-full sm:w-auto"
-          >
-            {deleteExpenseMutation.isPending ? "Deleting..." : "Delete"}
-          </Button>
-          <Button
-            type="submit"
-            form="edit-expense-form"
-            disabled={actionIsInProgress}
-            className="w-full sm:w-auto"
-          >
-            {updateExpenseMutation.isPending ? "Saving..." : "Save"}
-          </Button>
-        </div>
+            <Button
+              type="submit"
+              form="edit-expense-form"
+              disabled={actionIsInProgress}
+              className="w-full sm:w-auto"
+            >
+              {updateExpenseMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </Suspense>
       </DialogContent>
     </Dialog>
   );
