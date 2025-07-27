@@ -9,7 +9,20 @@ export default defineSchema({
     totalCost: v.number(),
     currency: v.string(),
     paidBy: v.id("users"),
+
+    originalCurrency: v.optional(v.string()),
+    originalTotalCost: v.optional(v.number()),
+    exchangeRate: v.optional(v.number()),
+    conversionDate: v.optional(v.string()),
   }),
+
+  exchange_rates: defineTable({
+    currency: v.string(),
+    rate: v.number(),
+    date: v.string(),
+  })
+    .index("by_currency_and_date", ["currency", "date"])
+    .index("by_date", ["date"]),
 
   user_expenses: defineTable({
     userId: v.id("users"),

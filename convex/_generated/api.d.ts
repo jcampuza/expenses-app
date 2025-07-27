@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as connections from "../connections.js";
 import type * as crons from "../crons.js";
+import type * as exchangeRates from "../exchangeRates.js";
 import type * as expenses from "../expenses.js";
 import type * as helpers from "../helpers.js";
 import type * as invitations from "../invitations.js";
@@ -32,6 +33,7 @@ import type * as user from "../user.js";
 declare const fullApi: ApiFromModules<{
   connections: typeof connections;
   crons: typeof crons;
+  exchangeRates: typeof exchangeRates;
   expenses: typeof expenses;
   helpers: typeof helpers;
   invitations: typeof invitations;

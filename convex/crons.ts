@@ -12,4 +12,13 @@ crons.daily(
   internal.invitations.deleteExpiredInvitations,
 );
 
+crons.daily(
+  "fetch-exchange-rates",
+  {
+    hourUTC: 6,
+    minuteUTC: 0,
+  },
+  internal.exchangeRates.fetchAndStoreExchangeRates,
+);
+
 export default crons;

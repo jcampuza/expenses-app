@@ -162,6 +162,9 @@ export function ConnectionsPageContainer({
               date={new Date(expenseItem.expense.date)}
               category={expenseItem.expense.category ?? null}
               totalCost={expenseItem.expense.totalCost}
+              currency={expenseItem.expense.currency}
+              originalCurrency={expenseItem.expense.originalCurrency}
+              originalTotalCost={expenseItem.expense.originalTotalCost}
               balance={expenseItem.balance}
               paidBy={expenseItem.expense.paidBy}
               splitEqually={splitEqually}
@@ -250,6 +253,7 @@ function AddExpenseDialogButton({
       name: string;
       totalCost: number;
       category: string;
+      currency: string;
       paidBy: Id<"users">;
       splitEqually: boolean;
     },
@@ -268,7 +272,7 @@ function AddExpenseDialogButton({
       date: new Date().toISOString(),
       totalCost: values.totalCost,
       category: values.category,
-      currency: "USD",
+      currency: values.currency,
     });
   };
 
@@ -295,6 +299,7 @@ function AddExpenseDialogButton({
               name: "",
               category: CATEGORY.None,
               totalCost: 0,
+              currency: "USD",
               paidBy: me?._id ?? ("" as Id<"users">),
               splitEqually: true,
             }}
@@ -342,6 +347,9 @@ function EditExpenseDialogButton({
   date,
   category,
   totalCost,
+  currency,
+  originalCurrency,
+  originalTotalCost,
   balance,
   paidBy,
   splitEqually,
@@ -353,6 +361,9 @@ function EditExpenseDialogButton({
   date: Date;
   category: string | null;
   totalCost: number;
+  currency: string;
+  originalCurrency?: string;
+  originalTotalCost?: number;
   balance: number;
   paidBy: Id<"users">;
   splitEqually: boolean;
@@ -390,6 +401,7 @@ function EditExpenseDialogButton({
       name: string;
       totalCost: number;
       category: string;
+      currency: string;
       paidBy: Id<"users">;
       splitEqually: boolean;
     },
@@ -405,7 +417,7 @@ function EditExpenseDialogButton({
       date: new Date().toISOString(),
       totalCost: value.totalCost,
       category: value.category,
-      currency: "USD",
+      currency: value.currency,
     });
   };
 
@@ -421,6 +433,8 @@ function EditExpenseDialogButton({
             paidBy={paidBy}
             splitEqually={splitEqually}
             totalCost={totalCost}
+            originalCurrency={originalCurrency}
+            originalTotalCost={originalTotalCost}
             balance={balance}
           />
         </div>
@@ -443,7 +457,8 @@ function EditExpenseDialogButton({
             initialValues={{
               name: name,
               category: category ?? CATEGORY.None,
-              totalCost: totalCost,
+              totalCost: originalTotalCost ?? totalCost,
+              currency: originalCurrency ?? currency,
               paidBy: paidBy,
               splitEqually: splitEqually,
             }}
@@ -496,6 +511,8 @@ function ExpenseItem({
   paidBy,
   splitEqually,
   totalCost,
+  originalCurrency,
+  originalTotalCost,
   balance,
 }: {
   name: string;
@@ -505,6 +522,8 @@ function ExpenseItem({
   paidBy: Id<"users">;
   splitEqually: boolean;
   totalCost: number;
+  originalCurrency?: string;
+  originalTotalCost?: number;
   balance: number;
 }) {
   const details = getWhoPaidExpenseDetails(currentUserId, paidBy, splitEqually);
@@ -515,6 +534,8 @@ function ExpenseItem({
       category={category ?? CATEGORY.None}
       amount={Math.abs(balance)}
       totalCost={totalCost}
+      originalCurrency={originalCurrency}
+      originalTotalCost={originalTotalCost}
       whoPaid={details.whoPaid}
       whoOwes={details.whoOwes}
       isSplitEqually={details.isSplitEqually}

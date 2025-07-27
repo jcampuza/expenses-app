@@ -1,21 +1,8 @@
 import { query, mutation, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { checkUsersConnection, getUsersSharedExpenses } from "./queries";
 import { getMeDocument, getExpensesByUserId } from "./helpers";
-
-// Validator for adding an expense, including participants
-const addExpenseValidator = v.object({
-  name: v.string(),
-  date: v.string(), // ISO string
-  totalCost: v.number(),
-  currency: v.string(),
-  category: v.optional(v.string()),
-
-  connectionId: v.id("user_connections"),
-  paidBy: v.id("users"),
-  splitEqually: v.boolean(),
-});
 
 // Validator for updating an expense
 const updateExpenseValidator = v.object({
@@ -132,7 +119,16 @@ const calculateExpenseAmounts = (
 
 // Add a new expense
 export const addExpense = mutation({
-  args: addExpenseValidator,
+  args: v.object({
+    name: v.string(),
+    date: v.string(), // ISO string
+    totalCost: v.number(),
+    currency: v.string(),
+    category: v.optional(v.string()),
+    connectionId: v.id("user_connections"),
+    paidBy: v.id("users"),
+    splitEqually: v.boolean(),
+  }),
   returns: v.object({
     _id: v.id("expenses"),
     _creationTime: v.number(),
@@ -142,6 +138,10 @@ export const addExpense = mutation({
     currency: v.string(),
     category: v.optional(v.string()),
     paidBy: v.id("users"),
+    originalCurrency: v.optional(v.string()),
+    originalTotalCost: v.optional(v.number()),
+    exchangeRate: v.optional(v.number()),
+    conversionDate: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const me = await getMeDocument(ctx);
@@ -157,24 +157,56 @@ export const addExpense = mutation({
     const payerId = args.paidBy;
     const nonPayerId = payerId === me._id ? otherUserId : me._id;
 
-    // Create the expense record
-    const expenseId = await ctx.db.insert("expenses", {
+    let finalTotalCost = args.totalCost;
+    let expenseData: Omit<Doc<"expenses">, "_id" | "_creationTime"> = {
       name: args.name,
       date: args.date,
       category: args.category,
-      totalCost: args.totalCost,
-      currency: args.currency,
+      totalCost: finalTotalCost,
+      currency: "USD",
       paidBy: payerId,
-    });
+    };
 
-    // Create user_expenses records for both participants
+    // Handle foreign currency conversion
+    if (args.currency !== "USD") {
+      // Get the latest exchange rate
+      const exchangeRate = await ctx.db
+        .query("exchange_rates")
+        .withIndex("by_currency_and_date", (q) =>
+          q.eq("currency", args.currency),
+        )
+        .order("desc")
+        .first();
+
+      if (!exchangeRate) {
+        throw new Error(`Exchange rate not available for ${args.currency}`);
+      }
+
+      // Convert to USD (rate is how many foreign units per USD, so divide)
+      finalTotalCost = args.totalCost / exchangeRate.rate;
+
+      // Add original currency information
+      expenseData = {
+        ...expenseData,
+        totalCost: finalTotalCost,
+        originalCurrency: args.currency,
+        originalTotalCost: args.totalCost,
+        exchangeRate: exchangeRate.rate,
+        conversionDate: exchangeRate.date,
+      };
+    }
+
+    // Create the expense record
+    const expenseId = await ctx.db.insert("expenses", expenseData);
+
+    // Create user_expenses records for both participants (using USD amounts)
     const payerAmounts = calculateExpenseAmounts(
-      args.totalCost,
+      finalTotalCost,
       args.splitEqually,
       true,
     );
     const nonPayerAmounts = calculateExpenseAmounts(
-      args.totalCost,
+      finalTotalCost,
       args.splitEqually,
       false,
     );
@@ -227,14 +259,56 @@ export const updateExpense = mutation({
       throw new Error("Expense not found");
     }
 
-    await ctx.db.patch(id, {
-      category: args.category,
-      totalCost: args.totalCost,
-      paidBy: args.paidBy,
-      currency: args.currency,
-      name: args.name,
-      date: args.date,
-    });
+    // Handle currency conversion for updates
+    let finalTotalCost = args.totalCost ?? existingExpense.totalCost;
+    let updateData: Omit<Doc<"expenses">, "_id" | "_creationTime"> = {
+      category: args.category ?? existingExpense.category,
+      totalCost: finalTotalCost,
+      paidBy: args.paidBy ?? existingExpense.paidBy,
+      currency: "USD",
+      name: args.name ?? existingExpense.name,
+      date: args.date ?? existingExpense.date,
+    };
+
+    // Handle foreign currency conversion if currency is provided
+    if (args.currency && args.currency !== "USD") {
+      const currency = args.currency; // TypeScript now knows this is not undefined
+      // Get the latest exchange rate
+      const exchangeRate = await ctx.db
+        .query("exchange_rates")
+        .withIndex("by_currency_and_date", (q) => q.eq("currency", currency))
+        .order("desc")
+        .first();
+
+      if (!exchangeRate) {
+        throw new Error(`Exchange rate not available for ${currency}`);
+      }
+
+      // Convert to USD (rate is how many foreign units per USD, so divide)
+      finalTotalCost =
+        (args.totalCost ?? existingExpense.totalCost) / exchangeRate.rate;
+
+      // Add original currency information
+      updateData = {
+        ...updateData,
+        totalCost: finalTotalCost,
+        originalCurrency: args.currency,
+        originalTotalCost: args.totalCost ?? existingExpense.totalCost,
+        exchangeRate: exchangeRate.rate,
+        conversionDate: exchangeRate.date,
+      };
+    } else if (args.currency === "USD") {
+      // If updating to USD, clear the original currency fields
+      updateData = {
+        ...updateData,
+        originalCurrency: undefined,
+        originalTotalCost: undefined,
+        exchangeRate: undefined,
+        conversionDate: undefined,
+      };
+    }
+
+    await ctx.db.patch(id, updateData);
 
     // Get updated expense data
     const updatedExpense = await ctx.db.get(id);
@@ -249,7 +323,7 @@ export const updateExpense = mutation({
       .collect();
 
     const payerId = args.paidBy;
-    const totalCost = args.totalCost ?? existingExpense.totalCost;
+    const totalCost = finalTotalCost; // Use the converted USD amount
     const splitEqually = args.splitEqually;
 
     // Update existing user_expenses records

@@ -40,7 +40,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwind-merge": "^3.0.1",
-    "uqr": "^0.1.2"
+    "uqr": "^0.1.2",
+    "zod": "^4.0.10"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.11",

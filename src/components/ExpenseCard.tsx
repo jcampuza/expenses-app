@@ -26,6 +26,8 @@ export interface ExpenseCardProps {
   isSplitEqually: boolean;
   amount: number;
   totalCost: number;
+  originalCurrency?: string;
+  originalTotalCost?: number;
   className?: string;
 }
 
@@ -61,6 +63,8 @@ export function ExpenseCardCompact({
   isSplitEqually,
   amount,
   totalCost,
+  originalCurrency,
+  originalTotalCost,
   className,
 }: ExpenseCardProps) {
   const formattedAmount = getFormattedAmount(amount);
@@ -76,7 +80,7 @@ export function ExpenseCardCompact({
       )}
     >
       {/* Accent color strip on the left */}
-      <div className="absolute bottom-0 left-0 top-0 w-1 bg-[hsl(262.1,83.3%,57.8%)]" />
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-[hsl(262.1,83.3%,57.8%)]" />
 
       <div className="p-3 pl-4">
         <div className="flex items-center justify-between">
@@ -133,7 +137,17 @@ export function ExpenseCardCompact({
               ${formattedAmount}
             </div>
             <div className="text-xs text-gray-500">
-              Total: ${getFormattedAmount(totalCost)}
+              {originalCurrency && originalCurrency !== "USD" ? (
+                <div className="flex flex-col">
+                  <span>
+                    {getFormattedAmount(originalTotalCost ?? totalCost)}{" "}
+                    {originalCurrency}
+                  </span>
+                  <span>${getFormattedAmount(totalCost)} USD</span>
+                </div>
+              ) : (
+                <span>Total: ${getFormattedAmount(totalCost)}</span>
+              )}
             </div>
           </div>
         </div>
