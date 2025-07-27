@@ -27,6 +27,7 @@ export function AddExpenseForm({
     name: string;
     category: string;
     totalCost: number;
+    currency: string;
     paidBy: Id<"users">;
     splitEqually: boolean;
   };
@@ -37,6 +38,7 @@ export function AddExpenseForm({
       name: string;
       totalCost: number;
       category: string;
+      currency: string;
       paidBy: Id<"users">;
       splitEqually: boolean;
     },
@@ -48,6 +50,12 @@ export function AddExpenseForm({
 }) {
   // Track if category was manually selected
   const [isManualSelection, setIsManualSelection] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    initialValues.currency,
+  );
+  const [totalCost, setTotalCost] = useState(
+    initialValues.totalCost === 0 ? "" : initialValues.totalCost.toString(),
+  );
   const categorySelectRef = useRef<HTMLSelectElement>(null);
 
   const me = useSuspenseQuery(convexQuery(api.user.getCurrentUser, {}));
@@ -56,6 +64,14 @@ export function AddExpenseForm({
       id: connectionId,
     }),
   );
+
+  const supportedCurrencies = useSuspenseQuery(
+    convexQuery(api.exchangeRates.getSupportedCurrencies, {}),
+  );
+
+  const exchangeRate = supportedCurrencies.data.find((c) => {
+    return c.currency === selectedCurrency;
+  });
 
   // Handle expense name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +105,16 @@ export function AddExpenseForm({
     }
   };
 
+  // Handle currency selection change
+  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCurrency(e.target.value);
+  };
+
+  // Handle total cost change
+  const handleTotalCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTotalCost(e.target.value);
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -99,6 +125,7 @@ export function AddExpenseForm({
       "expense-name": name,
       "expense-totalcost": totalCost,
       "expense-category": category,
+      "expense-currency": currency,
       "expense-paidBy": paidBy,
       "expense-splitEqually": splitEqually,
     } = formData;
@@ -119,6 +146,11 @@ export function AddExpenseForm({
       return;
     }
 
+    if (typeof currency !== "string" || currency.trim() === "") {
+      alert("Currency must be selected");
+      return;
+    }
+
     if (typeof paidBy !== "string" || paidBy.trim() === "") {
       alert("Who paid must be selected");
       return;
@@ -128,6 +160,7 @@ export function AddExpenseForm({
       name: name.trim(),
       totalCost: cost,
       category: category.trim(),
+      currency: currency.trim(),
       paidBy: paidBy.trim() as Id<"users">,
       splitEqually: splitEqually === "true",
     });
@@ -171,7 +204,15 @@ export function AddExpenseForm({
           defaultValue={
             initialValues.totalCost === 0 ? "" : initialValues.totalCost
           }
+          onChange={handleTotalCostChange}
         />
+
+        {/* USD equivalent display */}
+        {selectedCurrency !== "USD" && exchangeRate && totalCost && (
+          <div className="mt-2 text-sm text-gray-600">
+            ≈ ${(parseFloat(totalCost) / exchangeRate.rate).toFixed(2)} USD
+          </div>
+        )}
       </div>
 
       <div>
@@ -189,6 +230,35 @@ export function AddExpenseForm({
           defaultValue={initialValues.name}
           onChange={handleNameChange}
         />
+      </div>
+
+      <div>
+        <Label htmlFor={`${id}-currency`}>Currency</Label>
+        <Select
+          id={`${id}-currency`}
+          name="expense-currency"
+          required
+          defaultValue={initialValues.currency}
+          onChange={handleCurrencyChange}
+        >
+          {supportedCurrencies.data?.map((currencyData) => (
+            <option key={currencyData.currency} value={currencyData.currency}>
+              {currencyData.currency}
+            </option>
+          ))}
+        </Select>
+
+        {/* Exchange rate display */}
+        {selectedCurrency !== "USD" && exchangeRate && (
+          <div className="mt-2 text-sm text-gray-600">
+            <div>
+              {exchangeRate.rate.toFixed(2)} {selectedCurrency} = 1 USD
+            </div>
+            <div className="text-xs text-gray-500">
+              (last updated: {new Date(exchangeRate.date).toLocaleDateString()})
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
@@ -234,6 +304,17 @@ export function AddExpenseForm({
           <option value="false">One Person Pays All</option>
         </Select>
       </div>
+
+      {/* Note for editing expenses */}
+      {!isNewExpense && selectedCurrency !== "USD" && (
+        <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
+          <div className="text-sm text-blue-800">
+            <strong>Note:</strong> When editing this expense, we'll use the
+            latest exchange rate, not necessarily the exchange rate from when
+            the expense was originally added.
+          </div>
+        </div>
+      )}
     </form>
   );
 }
