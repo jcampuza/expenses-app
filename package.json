@@ -6,6 +6,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "next lint",
+    "check": "bun run lint && bun run typecheck && bun run format:check",
     "dev:next": "next dev --turbopack",
     "dev:convex": "bunx convex dev",
     "dev": "bun run scripts/dev.ts",
