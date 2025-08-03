@@ -26,10 +26,13 @@ export default async function PublicHome() {
           height={150}
           className="mb-6 rounded-full"
         />
-        <h1 className="mb-4 text-3xl font-bold">Track Your Expenses with Ease</h1>
+        <h1 className="mb-4 text-3xl font-bold">
+          Track Your Expenses with Ease
+        </h1>
         <p className="text-muted-foreground mb-6 max-w-md">
-          ExpenseMate helps you split bills, track shared expenses, and settle debts with friends
-          and roommates. Stay organized and eliminate awkward money conversations.
+          ExpenseMate helps you split bills, track shared expenses, and settle
+          debts with friends and roommates. Stay organized and eliminate awkward
+          money conversations.
         </p>
 
         <SignInButton>

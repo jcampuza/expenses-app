@@ -2,7 +2,13 @@
 
 import { buttonVariants } from "@/components/ui/button";
 import { formatDollars } from "@/lib/utils";
-import { ArrowRight, ArrowUpRight, CheckCircle, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CheckCircle,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { Id } from "@convex/_generated/dataModel";
 import Link from "next/link";
 
@@ -11,16 +17,19 @@ export const ConnectionsEmpty = () => {
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
       <h2 className="mb-4 text-xl font-semibold">Welcome to Your Dashboard!</h2>
       <p className="mb-4 text-gray-600 dark:text-gray-400">
-        Here you can manage your expenses and track your spending with friends and family.
+        Here you can manage your expenses and track your spending with friends
+        and family.
       </p>
       <p className="mb-6 text-gray-600 dark:text-gray-400">
-        Start sharing your expenses by going to your settings and sharing a verification code.
+        Start sharing your expenses by going to your settings and sharing a
+        verification code.
       </p>
 
       <Link
         href="/settings"
         className={
-          buttonVariants({ variant: "default", size: "lg" }) + " group flex items-center gap-2"
+          buttonVariants({ variant: "default", size: "lg" }) +
+          " group flex items-center gap-2"
         }
       >
         Get Started
@@ -74,7 +83,9 @@ export const ConnectionListItem = ({
                   You owe {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">All debts settled</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  All debts settled
+                </p>
               )}
             </div>
           </div>

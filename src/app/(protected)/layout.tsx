@@ -6,7 +6,11 @@ import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Loader2 } from "lucide-react";
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+export default function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { isLoading, isAuthenticated } = usePersistUserEffect();
 
   if (isLoading) {
@@ -26,7 +30,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col">
       <div className="flex min-h-screen flex-col">
         <Header />
-        <div className="relative container mx-auto flex grow flex-col">{children}</div>
+        <div className="relative container mx-auto flex grow flex-col">
+          {children}
+        </div>
         <Footer />
       </div>
     </div>

@@ -34,7 +34,7 @@ import { LoadingFormComponent } from "@/components/LoadingComponent";
 const getWhoPaidExpenseDetails = (
   currentUserId: Id<"users">,
   paidBy: Id<"users">,
-  splitEqually: boolean
+  splitEqually: boolean,
 ): {
   whoPaid: "you" | "they";
   whoOwes: "you" | "they";
@@ -72,7 +72,7 @@ export function ConnectionsPageContainer({
   const expensesQuery = useSuspenseQuery(
     convexQuery(api.expenses.getSharedExpenses, {
       connectionId: connectionId,
-    })
+    }),
   );
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,20 +98,30 @@ export function ConnectionsPageContainer({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{expensesQuery.data.user.name}</h1>
+          <h1 className="text-2xl font-semibold">
+            {expensesQuery.data.user.name}
+          </h1>
           <p
             className={cn(
               "mb-4",
-              expensesQuery.data.totalBalance > 0 && "text-green-600 dark:text-green-400",
-              expensesQuery.data.totalBalance < 0 && "text-red-600 dark:text-red-400"
+              expensesQuery.data.totalBalance > 0 &&
+                "text-green-600 dark:text-green-400",
+              expensesQuery.data.totalBalance < 0 &&
+                "text-red-600 dark:text-red-400",
             )}
           >
-            {getBalanceTitle(expensesQuery.data.totalBalance, expensesQuery.data.user.name)}
+            {getBalanceTitle(
+              expensesQuery.data.totalBalance,
+              expensesQuery.data.user.name,
+            )}
           </p>
         </div>
         {/* Desktop Add Expense Button */}
         <div className="hidden md:block">
-          <AddExpenseDialogButton connectionId={connectionId} variant="desktop" />
+          <AddExpenseDialogButton
+            connectionId={connectionId}
+            variant="desktop"
+          />
         </div>
       </div>
 
@@ -139,7 +149,9 @@ export function ConnectionsPageContainer({
             expenseItem.userAExpense.userId === me.data._id
               ? expenseItem.userBExpense
               : expenseItem.userAExpense;
-          const splitEqually = currentUserExpense.amountOwed > 0 && otherUserExpense.amountOwed > 0;
+          const splitEqually =
+            currentUserExpense.amountOwed > 0 &&
+            otherUserExpense.amountOwed > 0;
 
           return (
             <EditExpenseDialogButton
@@ -174,7 +186,10 @@ type ExpenseDialogButtonProps = React.ComponentProps<"button"> & {
   variant: "desktop" | "mobile";
 };
 
-const ExpenseDialogButton = ({ variant, ...rest }: ExpenseDialogButtonProps) => {
+const ExpenseDialogButton = ({
+  variant,
+  ...rest
+}: ExpenseDialogButtonProps) => {
   // Scroll-aware state using custom hook
   const { scrollDirection } = useScrollDirection();
 
@@ -191,7 +206,7 @@ const ExpenseDialogButton = ({ variant, ...rest }: ExpenseDialogButtonProps) => 
       {...rest}
       className={cn(
         "h-12 rounded-full shadow-lg transition-all duration-200 ease-out hover:shadow-xl",
-        showText ? "w-36 px-4" : "w-12 px-0"
+        showText ? "w-36 px-4" : "w-12 px-0",
       )}
     >
       <div className="flex items-center justify-center">
@@ -200,7 +215,9 @@ const ExpenseDialogButton = ({ variant, ...rest }: ExpenseDialogButtonProps) => 
         <span
           className={cn(
             "overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out",
-            showText ? "ml-2 max-w-[200px] opacity-100" : "ml-0 max-w-0 opacity-0"
+            showText
+              ? "ml-2 max-w-[200px] opacity-100"
+              : "ml-0 max-w-0 opacity-0",
           )}
         >
           Add Expense
@@ -240,7 +257,7 @@ function AddExpenseDialogButton({
       currency: string;
       paidBy: Id<"users">;
       splitEqually: boolean;
-    }
+    },
   ): Promise<void> => {
     e.preventDefault();
 
@@ -270,7 +287,9 @@ function AddExpenseDialogButton({
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Add Expense</DialogTitle>´
-            <DialogDescription>Fill in the expense details below.</DialogDescription>
+            <DialogDescription>
+              Fill in the expense details below.
+            </DialogDescription>
           </DialogHeader>
         </VisuallyHidden>
 
@@ -293,7 +312,11 @@ function AddExpenseDialogButton({
 
           <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
                 Cancel
               </Button>
             </DialogClose>
@@ -362,13 +385,16 @@ function EditExpenseDialogButton({
   });
 
   const handleDelete = () => {
-    const confirmed = window.confirm("Are you sure you want to delete this expense?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this expense?",
+    );
     if (!confirmed) return;
 
     deleteExpenseMutation.mutate({ id: id });
   };
 
-  const actionIsInProgress = updateExpenseMutation.isPending || deleteExpenseMutation.isPending;
+  const actionIsInProgress =
+    updateExpenseMutation.isPending || deleteExpenseMutation.isPending;
 
   const handleSubmit = (
     e: React.FormEvent<HTMLFormElement>,
@@ -379,7 +405,7 @@ function EditExpenseDialogButton({
       currency: string;
       paidBy: Id<"users">;
       splitEqually: boolean;
-    }
+    },
   ): void => {
     e.preventDefault();
 
@@ -419,7 +445,9 @@ function EditExpenseDialogButton({
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Edit Expense</DialogTitle>
-            <DialogDescription>Edit the details of your expense below.</DialogDescription>
+            <DialogDescription>
+              Edit the details of your expense below.
+            </DialogDescription>
           </DialogHeader>
         </VisuallyHidden>
 

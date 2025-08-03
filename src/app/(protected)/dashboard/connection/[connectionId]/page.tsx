@@ -15,5 +15,9 @@ interface PageProps {
 export default async function ConnectionPage({ params }: PageProps) {
   const { connectionId } = await params;
 
-  return <ConnectionsPageContainer connectionId={connectionId as Id<"user_connections">} />;
+  return (
+    <ConnectionsPageContainer
+      connectionId={connectionId as Id<"user_connections">}
+    />
+  );
 }

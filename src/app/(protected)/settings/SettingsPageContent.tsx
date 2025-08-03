@@ -1,7 +1,14 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { Loader2, QrCode, Delete, MoreHorizontal, Trash2, ArrowLeft } from "lucide-react";
+import {
+  Loader2,
+  QrCode,
+  Delete,
+  MoreHorizontal,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,7 +75,10 @@ export function SettingsPageContent() {
     <div className="container p-4">
       <div className="mb-6">
         <Button asChild variant="ghost" className="hover:bg-transparent">
-          <AppLink href="/dashboard" className="text-primary inline-flex items-center">
+          <AppLink
+            href="/dashboard"
+            className="text-primary inline-flex items-center"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </AppLink>
@@ -127,7 +137,7 @@ function ExpireInvitationsDialog() {
           variant: "destructive",
         });
       },
-    }
+    },
   );
 
   return (
@@ -169,7 +179,7 @@ function GenerateInvitationDialog() {
   const { toast } = useToast();
 
   const { mutate: getInvitationLink, isPending } = useConvexMutation(
-    api.invitations.getInvitationLink
+    api.invitations.getInvitationLink,
   );
 
   const generateQRCode = async () => {
@@ -217,12 +227,16 @@ function GenerateInvitationDialog() {
         <Button onClick={() => generateQRCode()} className="flex">
           <QrCode className="mr-2 h-4 w-4" />
           Generate Invitation QR Code
-          {state.status === "loading" || isPending ? <Loader2 className="animate-spin" /> : null}
+          {state.status === "loading" || isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-center">Your Invitation QR Code</DialogTitle>
+          <DialogTitle className="text-center">
+            Your Invitation QR Code
+          </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center p-4">
           {state.data ? (
@@ -239,13 +253,15 @@ function GenerateInvitationDialog() {
             <div className="mt-2 space-y-4 text-center">
               <Button
                 onClick={() => {
-                  navigator.clipboard.writeText(state.invitationLink).then(() => {
-                    toast({
-                      title: "Copied to clipboard",
-                      description: `Invitation link copied to clipboard: ${state.invitationLink}`,
-                      duration: 3000,
+                  navigator.clipboard
+                    .writeText(state.invitationLink)
+                    .then(() => {
+                      toast({
+                        title: "Copied to clipboard",
+                        description: `Invitation link copied to clipboard: ${state.invitationLink}`,
+                        duration: 3000,
+                      });
                     });
-                  });
                 }}
               >
                 Copy invitation link to clipboard
@@ -263,7 +279,7 @@ function GenerateInvitationDialog() {
 
 function ConnectedUsersTable() {
   const { data: connectedUsers, isPending } = useSuspenseQuery(
-    convexQuery(api.connections.getConnectedUsersForSettings, {})
+    convexQuery(api.connections.getConnectedUsersForSettings, {}),
   );
 
   if (isPending) {
@@ -297,12 +313,17 @@ function ConnectedUsersTable() {
           {connectedUsers.map((user) => (
             <TableRow key={user.connectionId}>
               <TableCell className="font-medium">{user.name}</TableCell>
-              <TableCell className="text-muted-foreground">{user.email || "N/A"}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {user.email || "N/A"}
+              </TableCell>
               <TableCell className="text-muted-foreground">
                 {new Date(user.connectedAt).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <ConnectionActionsDropdown connectionId={user.connectionId} userName={user.name} />
+                <ConnectionActionsDropdown
+                  connectionId={user.connectionId}
+                  userName={user.name}
+                />
               </TableCell>
             </TableRow>
           ))}
@@ -337,7 +358,7 @@ function ConnectionActionsDropdown({
           variant: "destructive",
         });
       },
-    }
+    },
   );
 
   const handleDeleteConnection = () => {
@@ -363,8 +384,9 @@ function ConnectionActionsDropdown({
             <AlertDialogHeader>
               <AlertDialogTitle>Remove Connection</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to remove your connection with {userName}? This action cannot
-                be undone and will delete all shared expenses between you and {userName}.
+                Are you sure you want to remove your connection with {userName}?
+                This action cannot be undone and will delete all shared expenses
+                between you and {userName}.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

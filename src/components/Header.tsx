@@ -16,7 +16,10 @@ export function Header() {
   return (
     <header className="bg-accent flex items-center justify-between p-4">
       <div className="flex items-center gap-2">
-        <Link href={headerLink} className="inline-flex items-center gap-2 text-black">
+        <Link
+          href={headerLink}
+          className="inline-flex items-center gap-2 text-black"
+        >
           <img
             src="/logo.webp"
             width={40}

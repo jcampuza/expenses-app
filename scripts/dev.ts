@@ -29,7 +29,10 @@ function makeLineSplitter() {
 }
 
 // given a Uint8Array stream, turn it into an async-iterable of lines
-async function* lines(stream: ReadableStream<Uint8Array>, prefix: string): AsyncIterable<string> {
+async function* lines(
+  stream: ReadableStream<Uint8Array>,
+  prefix: string,
+): AsyncIterable<string> {
   // Read the Uint8Array chunks, decode them, and split into lines manually
   const decoder = new TextDecoder();
   let buffer = "";
@@ -72,7 +75,8 @@ async function run() {
     { prefix: "next:stdout", stream: next.stdout },
     { prefix: "next:stderr", stream: next.stderr },
   ].filter(
-    (s): s is { prefix: string; stream: ReadableStream<Uint8Array> } => s.stream !== undefined
+    (s): s is { prefix: string; stream: ReadableStream<Uint8Array> } =>
+      s.stream !== undefined,
   );
 
   const tasks = streams.map(({ prefix, stream }) => {

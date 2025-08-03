@@ -9,7 +9,9 @@ import {
 } from "@/app/(protected)/dashboard/ConnectionsListItem";
 
 export default function DashboardContent() {
-  const connectedUsers = useSuspenseQuery(convexQuery(api.connections.getConnectedUsers, {}));
+  const connectedUsers = useSuspenseQuery(
+    convexQuery(api.connections.getConnectedUsers, {}),
+  );
 
   if (!connectedUsers.data || connectedUsers.data.length === 0) {
     return <ConnectionsEmpty />;

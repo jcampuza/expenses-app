@@ -41,7 +41,7 @@ export function AddExpenseForm({
       currency: string;
       paidBy: Id<"users">;
       splitEqually: boolean;
-    }
+    },
   ) => void;
   ref?: React.Ref<HTMLFormElement>;
   isNewExpense?: boolean;
@@ -50,9 +50,11 @@ export function AddExpenseForm({
 }) {
   // Track if category was manually selected
   const [isManualSelection, setIsManualSelection] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState(initialValues.currency);
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    initialValues.currency,
+  );
   const [totalCost, setTotalCost] = useState(
-    initialValues.totalCost === 0 ? "" : initialValues.totalCost.toString()
+    initialValues.totalCost === 0 ? "" : initialValues.totalCost.toString(),
   );
   const categorySelectRef = useRef<HTMLSelectElement>(null);
 
@@ -60,11 +62,11 @@ export function AddExpenseForm({
   const connection = useSuspenseQuery(
     convexQuery(api.connections.getConnectionById, {
       id: connectionId,
-    })
+    }),
   );
 
   const supportedCurrencies = useSuspenseQuery(
-    convexQuery(api.exchangeRates.getSupportedCurrencies, {})
+    convexQuery(api.exchangeRates.getSupportedCurrencies, {}),
   );
 
   const exchangeRate = supportedCurrencies.data.find((c) => {
@@ -81,7 +83,8 @@ export function AddExpenseForm({
       // 1. User has manually selected a category (isManualSelection is true)
       // 2. The current category is not None
       const currentCategory = categorySelectRef.current.value;
-      const shouldSuggest = !isManualSelection || currentCategory === "None" || !currentCategory;
+      const shouldSuggest =
+        !isManualSelection || currentCategory === "None" || !currentCategory;
 
       if (shouldSuggest) {
         const suggestedCategory = suggestCategory(newName);
@@ -184,7 +187,12 @@ export function AddExpenseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={cn("space-y-4", className)} id={id} ref={ref}>
+    <form
+      onSubmit={handleSubmit}
+      className={cn("space-y-4", className)}
+      id={id}
+      ref={ref}
+    >
       <div>
         <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
         <NumberInput
@@ -193,7 +201,9 @@ export function AddExpenseForm({
           allowDecimal={true}
           required
           className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
-          defaultValue={initialValues.totalCost === 0 ? "" : initialValues.totalCost}
+          defaultValue={
+            initialValues.totalCost === 0 ? "" : initialValues.totalCost
+          }
           onChange={handleTotalCostChange}
         />
 
@@ -299,8 +309,9 @@ export function AddExpenseForm({
       {!isNewExpense && selectedCurrency !== "USD" && (
         <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
           <div className="text-sm text-blue-800">
-            <strong>Note:</strong> When editing this expense, we&apos;ll use the latest exchange
-            rate, not necessarily the exchange rate from when the expense was originally added.
+            <strong>Note:</strong> When editing this expense, we&apos;ll use the
+            latest exchange rate, not necessarily the exchange rate from when
+            the expense was originally added.
           </div>
         </div>
       )}
