@@ -14,7 +14,7 @@ import {
   Plane,
   Package,
 } from "lucide-react";
-import { cn } from "~/lib/utils";
+import { cn } from "@/lib/utils";
 
 // Define the props for the expense card
 export interface ExpenseCardProps {

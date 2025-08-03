@@ -1,7 +1,7 @@
 import React from "react";
-import { buttonVariants } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
-import { Link, LinkProps } from "@tanstack/react-router";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import Link, { LinkProps } from "next/link";
 
 const AppLink = React.forwardRef<
   HTMLAnchorElement,
