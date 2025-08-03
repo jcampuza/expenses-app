@@ -12,6 +12,8 @@ interface PageProps {
   }>;
 }
 
+export const dynamic = "force-static";
+
 export default async function ConnectionPage({ params }: PageProps) {
   const { connectionId } = await params;
 

@@ -15,6 +15,7 @@ export default clerkMiddleware(async (auth, req) => {
   // If a user is authenticated:
   // - If the route is protected, allow access
   // - If the route is not protected, redirect to dashboard
+
   if (isAuthenticated) {
     return isProtected
       ? NextResponse.next()
