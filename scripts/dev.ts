@@ -5,8 +5,8 @@ import { spawn } from "bun";
 const COLORS: Record<string, string> = {
   "convex:stdout": "\x1b[34m", // blue
   "convex:stderr": "\x1b[34m",
-  "vite:stdout": "\x1b[32m", // green
-  "vite:stderr": "\x1b[32m",
+  "next:stdout": "\x1b[32m", // green
+  "next:stderr": "\x1b[32m",
 };
 const RESET = "\x1b[0m";
 
@@ -29,17 +29,29 @@ function makeLineSplitter() {
 }
 
 // given a Uint8Array stream, turn it into an async-iterable of lines
-function lines(
-  stream: ReadableStream<Uint8Array>,
-  prefix: string,
-): AsyncIterable<string> {
-  return (async function* () {
-    const textStream = stream.pipeThrough(new TextDecoderStream());
-    const lineStream = textStream.pipeThrough(makeLineSplitter());
-    for await (const line of lineStream) {
-      yield `[${prefix}] ${line}`;
+async function* lines(stream: ReadableStream<Uint8Array>, prefix: string): AsyncIterable<string> {
+  // Read the Uint8Array chunks, decode them, and split into lines manually
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const linesArr = buffer.split("\n");
+      buffer = linesArr.pop() ?? "";
+      for (const line of linesArr) {
+        yield `[${prefix}] ${line}`;
+      }
     }
-  })();
+    if (buffer.length) {
+      yield `[${prefix}] ${buffer}`;
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 async function run() {
@@ -48,7 +60,7 @@ async function run() {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const next = spawn(["bun", "run", "dev:vite"], {
+  const next = spawn(["bun", "run", "dev:next"], {
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -57,11 +69,10 @@ async function run() {
   const streams = [
     { prefix: "convex:stdout", stream: convex.stdout },
     { prefix: "convex:stderr", stream: convex.stderr },
-    { prefix: "vite:stdout", stream: next.stdout },
-    { prefix: "vite:stderr", stream: next.stderr },
+    { prefix: "next:stdout", stream: next.stdout },
+    { prefix: "next:stderr", stream: next.stderr },
   ].filter(
-    (s): s is { prefix: string; stream: ReadableStream<Uint8Array> } =>
-      s.stream !== undefined,
+    (s): s is { prefix: string; stream: ReadableStream<Uint8Array> } => s.stream !== undefined
   );
 
   const tasks = streams.map(({ prefix, stream }) => {

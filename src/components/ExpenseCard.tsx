@@ -14,7 +14,7 @@ import {
   Plane,
   Package,
 } from "lucide-react";
-import { cn } from "~/lib/utils";
+import { cn } from "@/lib/utils";
 
 // Define the props for the expense card
 export interface ExpenseCardProps {
@@ -76,7 +76,7 @@ export function ExpenseCardCompact({
     <div
       className={cn(
         "relative overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 hover:shadow-md",
-        className,
+        className
       )}
     >
       {/* Accent color strip on the left */}
@@ -99,9 +99,7 @@ export function ExpenseCardCompact({
                 <span
                   className={cn(
                     "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                    whoOwes === "you"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-green-50 text-green-700",
+                    whoOwes === "you" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
                   )}
                 >
                   {oweText}
@@ -131,7 +129,7 @@ export function ExpenseCardCompact({
             <div
               className={cn(
                 "text-sm font-semibold",
-                whoOwes === "you" ? "text-red-500" : "text-green-500",
+                whoOwes === "you" ? "text-red-500" : "text-green-500"
               )}
             >
               ${formattedAmount}
@@ -140,8 +138,7 @@ export function ExpenseCardCompact({
               {originalCurrency && originalCurrency !== "USD" ? (
                 <div className="flex flex-col">
                   <span>
-                    {getFormattedAmount(originalTotalCost ?? totalCost)}{" "}
-                    {originalCurrency}
+                    {getFormattedAmount(originalTotalCost ?? totalCost)} {originalCurrency}
                   </span>
                   <span>${getFormattedAmount(totalCost)} USD</span>
                 </div>
