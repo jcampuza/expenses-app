@@ -14,7 +14,10 @@ export function usePersistUserEffect() {
   const { isLoading: authIsLoading, isAuthenticated } = useConvexAuth();
 
   const { data: user, isLoading: userQueryIsLoading } = useQuery(
-    convexQuery(api.user.getCurrentUser, isAuthenticated ? {} : "skip"),
+    convexQuery(
+      api.user.getCurrentUserForPersistence,
+      isAuthenticated ? {} : "skip",
+    ),
   );
 
   const { mutate: storeUser, isPending: isStoringUser } = useMutation({

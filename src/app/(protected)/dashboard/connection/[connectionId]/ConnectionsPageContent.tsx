@@ -25,9 +25,8 @@ import { CATEGORY } from "@/lib/categories";
 import { cn, formatDollars } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import { useConvexMutation } from "@/hooks/use-convex-mutation";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { LoadingFormComponent } from "@/components/LoadingComponent";
 
@@ -67,7 +66,9 @@ export function ConnectionsPageContainer({
 }: {
   connectionId: Id<"user_connections">;
 }) {
-  const me = useSuspenseQuery(convexQuery(api.user.getCurrentUser, {}));
+  const me = useSuspenseQuery(
+    convexQuery(api.user.getCurrentUserAuthenticated, {}),
+  );
 
   const expensesQuery = useSuspenseQuery(
     convexQuery(api.expenses.getSharedExpenses, {
@@ -241,7 +242,7 @@ function AddExpenseDialogButton({
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const me = useQuery(api.user.getCurrentUser);
+  const me = useQuery(convexQuery(api.user.getCurrentUserAuthenticated, {}));
   const addExpenseMutation = useConvexMutation(api.expenses.addExpense, {
     onSuccess: () => {
       setOpen(false);
@@ -261,7 +262,7 @@ function AddExpenseDialogButton({
   ): Promise<void> => {
     e.preventDefault();
 
-    if (!me?._id) {
+    if (!me.data?._id) {
       throw new Error("Tried to add expense while no user is logged in");
     }
 
@@ -301,7 +302,7 @@ function AddExpenseDialogButton({
               category: CATEGORY.None,
               totalCost: 0,
               currency: "USD",
-              paidBy: me?._id ?? ("" as Id<"users">),
+              paidBy: me.data?._id ?? ("" as Id<"users">),
               splitEqually: true,
             }}
             onSubmit={handleSubmit}

@@ -58,7 +58,9 @@ export function AddExpenseForm({
   );
   const categorySelectRef = useRef<HTMLSelectElement>(null);
 
-  const me = useSuspenseQuery(convexQuery(api.user.getCurrentUser, {}));
+  const me = useSuspenseQuery(
+    convexQuery(api.user.getCurrentUserAuthenticated, {}),
+  );
   const connection = useSuspenseQuery(
     convexQuery(api.connections.getConnectionById, {
       id: connectionId,

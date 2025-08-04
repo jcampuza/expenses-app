@@ -1,6 +1,19 @@
 import { v } from "convex/values";
 import { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
+
+// Helper function to get unique user by token identifier
+const getUserByTokenIdentifier = async (
+  ctx: QueryCtx | MutationCtx,
+  tokenIdentifier: string,
+) => {
+  return await ctx.db
+    .query("users")
+    .withIndex("by_token_identifier", (q) =>
+      q.eq("tokenIdentifier", tokenIdentifier),
+    )
+    .unique();
+};
 
 export const persist = mutation({
   args: {},
@@ -18,12 +31,7 @@ export const persist = mutation({
       throw new Error("Called storeUser without authentication present");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_token_identifier", (q) =>
-        q.eq("tokenIdentifier", identity.tokenIdentifier),
-      )
-      .unique();
+    const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 
     if (user !== null) {
       const updates: Partial<Doc<"users">> = {};
@@ -64,6 +72,45 @@ export const persist = mutation({
   },
 });
 
+// For user persistence - allows null return for new users
+export const getCurrentUserForPersistence = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error(
+        "Called getCurrentUserForPersistence without authentication present",
+      );
+    }
+
+    const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
+
+    // Return null for non-existent users instead of throwing an error
+    // This allows the hook to properly detect new users and create them
+    return user;
+  },
+});
+
+// For protected routes - requires authenticated user
+export const getCurrentUserAuthenticated = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
+
+    if (!user) {
+      throw new Error("User not found in database");
+    }
+
+    return user;
+  },
+});
+
+// @deprecated Use getCurrentUserForPersistence or getCurrentUserAuthenticated instead
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
@@ -72,12 +119,7 @@ export const getCurrentUser = query({
       throw new Error("Called getCurrentUser without authentication present");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_token_identifier", (q) =>
-        q.eq("tokenIdentifier", identity.tokenIdentifier),
-      )
-      .first();
+    const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 
     // Return null for non-existent users instead of throwing an error
     // This allows the hook to properly detect new users and create them

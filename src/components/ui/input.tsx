@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
-    console.log("input rendered", props.name);
     return (
       <input
         type={type}

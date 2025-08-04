@@ -8,12 +8,25 @@ import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexQueryClient } from "@convex-dev/react-query";
 
-let browserQueryClient: QueryClient | undefined = undefined;
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-const convexQueryClient = new ConvexQueryClient(convex);
+interface ClientSet {
+  convexClient: ConvexReactClient;
+  convexQueryClient: ConvexQueryClient;
+  queryClient: QueryClient;
+}
 
-function makeQueryClient() {
-  const reactQueryClient = new QueryClient({
+let browserClients: ClientSet | undefined = undefined;
+
+function createClients(): ClientSet {
+  // Create the Convex client
+  const convexClient = new ConvexReactClient(
+    process.env.NEXT_PUBLIC_CONVEX_URL!,
+  );
+
+  // Create the Convex Query client
+  const convexQueryClient = new ConvexQueryClient(convexClient);
+
+  // Create the React Query client with Convex integration
+  const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
@@ -22,30 +35,40 @@ function makeQueryClient() {
     },
   });
 
-  convexQueryClient.connect(reactQueryClient);
+  // Connect them together
+  convexQueryClient.connect(queryClient);
 
-  return reactQueryClient;
+  return {
+    convexClient,
+    convexQueryClient,
+    queryClient,
+  };
 }
 
-function getQueryClient() {
+function getClients(): ClientSet {
   if (typeof window === "undefined") {
-    // Server: always make a new query client
-    return makeQueryClient();
+    // Server: always make new clients
+    return createClients();
   } else {
-    // Browser: make a new query client if we don't already have one
-    // This is to avoid creating a new client on every component unmount/remount
-    if (!browserQueryClient) browserQueryClient = makeQueryClient();
-    return browserQueryClient;
+    // Browser: make new clients if we don't already have them
+    // This is to avoid creating new clients on every component unmount/remount
+    if (!browserClients) {
+      browserClients = createClients();
+    }
+    return browserClients;
   }
 }
 
 export function RootProviders({ children }: { children: ReactNode }) {
-  const queryClient = getQueryClient();
+  const clients = getClients();
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={clients.queryClient}>
       <ClerkProvider>
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <ConvexProviderWithClerk
+          client={clients.convexClient}
+          useAuth={useAuth}
+        >
           {children}
         </ConvexProviderWithClerk>
       </ClerkProvider>
