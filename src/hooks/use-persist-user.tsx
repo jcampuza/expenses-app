@@ -1,7 +1,8 @@
-import { useUser } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
-import { useEffect, useState } from "react";
-import { useMutation } from "convex/react";
+import { useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 
@@ -10,39 +11,37 @@ export type AuthState = {
 };
 
 export function usePersistUserEffect() {
-  const { isLoading, isAuthenticated } = useConvexAuth();
-  const { user } = useUser();
-  // When this state is set we know the server
-  // has stored the user.
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
-  const storeUser = useMutation(api.user.persist);
+  const { isLoading: authIsLoading, isAuthenticated } = useConvexAuth();
 
-  // Call the `storeUser` mutation function to store
-  // the current user in the `users` table and return the `Id` value.
+  const { data: user, isLoading: userQueryIsLoading } = useQuery(
+    convexQuery(api.user.getCurrentUser, isAuthenticated ? {} : "skip"),
+  );
+
+  const { mutate: storeUser, isPending: isStoringUser } = useMutation({
+    mutationFn: useConvexMutation(api.user.persist),
+  });
+
   useEffect(() => {
-    // If the user is not logged in don't do anything
-    if (!isAuthenticated) {
+    // Don't do anything until we know if the user exists or not.
+    if (!isAuthenticated || userQueryIsLoading) {
       return;
     }
-    // Store the user in the database.
-    // Recall that `storeUser` gets the user information via the `auth`
-    // object on the server. You don't need to pass anything manually here.
-    async function createUser() {
-      const result = await storeUser();
-      setUserId(result.userId);
-      console.log("User persisted:", result.status);
-    }
 
-    createUser();
-    return () => setUserId(null);
-  }, [isAuthenticated, storeUser, user?.id]);
+    // This will run for new users (user is null) and existing users (user is not null).
+    // For existing users, it's a background sync that won't block the UI.
+    // For new users, the `isCreatingUser` flag will be used to block the UI.
+    storeUser({});
+  }, [isAuthenticated, storeUser, userQueryIsLoading]);
 
-  // Combine the local state with the state from context
+  const isCreatingUser = user === null && isStoringUser;
+  const isLoading = authIsLoading || userQueryIsLoading || isCreatingUser;
+
   return {
-    isLoading: isLoading || (isAuthenticated && userId === null),
-    isAuthenticated: isAuthenticated && userId !== null,
+    isLoading,
+    // A user is considered fully authenticated and ready once they exist in the DB.
+    isAuthenticated: isAuthenticated && !!user,
     authState: {
-      userId,
+      userId: user?._id ?? null,
     },
   };
 }

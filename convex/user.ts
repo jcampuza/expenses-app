@@ -79,10 +79,8 @@ export const getCurrentUser = query({
       )
       .first();
 
-    if (!user) {
-      throw new Error("User not found");
-    }
-
+    // Return null for non-existent users instead of throwing an error
+    // This allows the hook to properly detect new users and create them
     return user;
   },
 });

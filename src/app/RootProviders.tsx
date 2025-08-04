@@ -13,7 +13,7 @@ const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 const convexQueryClient = new ConvexQueryClient(convex);
 
 function makeQueryClient() {
-  return new QueryClient({
+  const reactQueryClient = new QueryClient({
     defaultOptions: {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
@@ -21,6 +21,10 @@ function makeQueryClient() {
       },
     },
   });
+
+  convexQueryClient.connect(reactQueryClient);
+
+  return reactQueryClient;
 }
 
 function getQueryClient() {
