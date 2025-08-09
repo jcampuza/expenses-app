@@ -4,6 +4,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useConvexAuth } from "convex/react";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
@@ -20,12 +21,13 @@ export function Header() {
           href={headerLink}
           className="inline-flex items-center gap-2 text-black"
         >
-          <img
+          <Image
             src="/logo.webp"
             width={40}
             height={40}
             alt="Expenses App Logo"
             className="rounded-full"
+            priority
           />
 
           <span className="text-xl font-bold">ExpenseMate</span>

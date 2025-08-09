@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 export interface ExpenseCardProps {
   name: string;
   date: string;
+  updatedAt?: string;
   category: string;
   whoPaid: "you" | "they";
   whoOwes: "you" | "they";
@@ -57,6 +58,7 @@ function getFormattedAmount(amount: number) {
 export function ExpenseCardCompact({
   name,
   date,
+  updatedAt,
   category,
   whoPaid,
   whoOwes,
@@ -90,6 +92,11 @@ export function ExpenseCardCompact({
               <div className="ml-2 flex items-center text-xs text-gray-500">
                 <Calendar className="mr-1 h-3 w-3" />
                 {date}
+                {updatedAt && (
+                  <span className="ml-2 italic text-[10px] text-gray-400">
+                    Edited {new Date(updatedAt).toLocaleDateString()}
+                  </span>
+                )}
               </div>
             </div>
 

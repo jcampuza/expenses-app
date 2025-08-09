@@ -43,4 +43,14 @@ describe("suggestCategory", () => {
     expect(suggestCategory("coffeeee")).toBe(CATEGORY.Coffee); // Should match
     expect(suggestCategory("coffexxx")).toBe(null); // Too different
   });
+
+  // Test accent normalization for Spanish and English words
+  it("should handle accented words by normalizing", () => {
+    expect(suggestCategory("café")).toBe(CATEGORY.Coffee);
+    expect(suggestCategory("cafetería")).toBe(CATEGORY.Coffee);
+    expect(suggestCategory("película")).toBe(CATEGORY.Entertainment);
+    expect(suggestCategory("autobús")).toBe(CATEGORY.Transportation);
+    expect(suggestCategory("teléfono")).toBe(CATEGORY.Utilities);
+    expect(suggestCategory("avión")).toBe(CATEGORY.Travel);
+  });
 });
