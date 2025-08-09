@@ -33,7 +33,7 @@ export const ConnectionsEmpty = () => {
       </p>
 
       <Link
-        href="/settings"
+        href="/settings?openInvite=true"
         className={
           buttonVariants({ variant: "default", size: "lg" }) +
           " group flex items-center gap-2"

@@ -13,7 +13,7 @@ import {
   GlobalActivityFeed,
   DashboardActivitySkeleton,
 } from "./GlobalActivityFeed";
-import Link from "next/link";
+import { GenerateInvitationDialog } from "@/components/GenerateInvitationDialog";
 import { formatDollars } from "@/lib/utils";
 
 export default function DashboardContent() {
@@ -35,11 +35,12 @@ export default function DashboardContent() {
             Overview of your connections and recent activity
           </p>
         </div>
-        <Link href="/settings">
-          <Button size="sm" className="gap-2">
-            <Plus className="h-4 w-4" /> Invite a friend
-          </Button>
-        </Link>
+        <GenerateInvitationDialog
+          triggerLabel="Invite a friend"
+          triggerIcon={<Plus className="h-4 w-4" />}
+          buttonSize="sm"
+          buttonClassName="gap-2"
+        />
       </div>
 
       {/* Summary cards */}
