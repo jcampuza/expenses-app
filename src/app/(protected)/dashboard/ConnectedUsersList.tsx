@@ -12,6 +12,13 @@ import {
 import { Id } from "@convex/_generated/dataModel";
 import Link from "next/link";
 
+export type ConnectedUserSummary = {
+  connectionId: Id<"user_connections">;
+  userId: Id<"users">;
+  name: string;
+  totalBalance: number;
+};
+
 export const ConnectionsEmpty = () => {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
@@ -96,3 +103,22 @@ export const ConnectionListItem = ({
     </li>
   );
 };
+
+export function ConnectedUsersList({
+  users,
+}: {
+  users: ConnectedUserSummary[];
+}) {
+  return (
+    <ul className="space-y-3">
+      {users.map((user) => (
+        <ConnectionListItem
+          key={user.connectionId}
+          connectionId={user.connectionId}
+          name={user.name}
+          totalBalance={user.totalBalance}
+        />
+      ))}
+    </ul>
+  );
+}

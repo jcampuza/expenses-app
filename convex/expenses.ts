@@ -1,8 +1,13 @@
 import { query, mutation, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { checkUsersConnection, getUsersSharedExpenses } from "./queries";
+import { assertUsersConnection, getUsersSharedExpenses } from "./queries";
 import { getMeDocument, getExpensesByUserId } from "./helpers";
+import {
+  addExpenseCreatedAuditLog,
+  addExpenseDeletedAuditLog,
+  addExpenseUpdatedAuditLog,
+} from "./audit";
 
 // Validator for updating an expense
 const updateExpenseValidator = v.object({
@@ -35,7 +40,7 @@ export const getSharedExpenses = query({
   handler: async (ctx, args) => {
     const me = await getMeDocument(ctx);
 
-    const connection = await checkUsersConnection(ctx, {
+    const connection = await assertUsersConnection(ctx, {
       connectionId: args.connectionId,
       userId: me._id,
     });
@@ -142,6 +147,7 @@ export const addExpense = mutation({
     originalTotalCost: v.optional(v.number()),
     exchangeRate: v.optional(v.number()),
     conversionDate: v.optional(v.string()),
+    updatedAt: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const me = await getMeDocument(ctx);
@@ -229,6 +235,9 @@ export const addExpense = mutation({
       throw new Error("Failed to create expense");
     }
 
+    // Audit log: create
+    await addExpenseCreatedAuditLog(ctx, me._id, newExpense);
+
     return newExpense;
   },
 });
@@ -268,6 +277,7 @@ export const updateExpense = mutation({
       currency: "USD",
       name: args.name ?? existingExpense.name,
       date: args.date ?? existingExpense.date,
+      updatedAt: new Date().toISOString(),
     };
 
     // Handle foreign currency conversion if currency is provided
@@ -315,6 +325,14 @@ export const updateExpense = mutation({
     if (!updatedExpense) {
       throw new Error("Failed to get updated expense");
     }
+
+    // Audit log: update
+    await addExpenseUpdatedAuditLog(
+      ctx,
+      me._id,
+      existingExpense,
+      updatedExpense,
+    );
 
     // Get existing user_expenses for this expense
     const existingUserExpenses = await ctx.db
@@ -375,6 +393,9 @@ export const deleteExpense = mutation({
     }
 
     await ctx.db.delete(args.id);
+
+    // Audit log: delete (capture snapshot in before)
+    await addExpenseDeletedAuditLog(ctx, me._id, existingExpense);
 
     return { success: true };
   },

@@ -1,5 +1,9 @@
 import Fuse from "fuse.js";
 
+export function removeAccents(input: string): string {
+  return input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 export const CATEGORY = {
   None: "None",
   Coffee: "Coffee",
@@ -26,6 +30,8 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   espresso: CATEGORY.Coffee,
   latte: CATEGORY.Coffee,
   tea: CATEGORY.Coffee,
+  // Spanish (no accents)
+  cafeteria: CATEGORY.Coffee,
 
   // Food
   restaurant: CATEGORY.Food,
@@ -38,6 +44,12 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   pizza: CATEGORY.Food,
   "whole foods": CATEGORY.Food,
   boba: CATEGORY.Food,
+  // Spanish (no accents)
+  restaurante: CATEGORY.Food,
+  almuerzo: CATEGORY.Food,
+  cena: CATEGORY.Food,
+  desayuno: CATEGORY.Food,
+  comida: CATEGORY.Food,
 
   // Groceries
   grocery: CATEGORY.Groceries,
@@ -47,6 +59,10 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   walmart: CATEGORY.Groceries,
   costco: CATEGORY.Groceries,
   safeway: CATEGORY.Groceries,
+  // Spanish (no accents)
+  supermercado: CATEGORY.Groceries,
+  mercado: CATEGORY.Groceries,
+  comestibles: CATEGORY.Groceries,
 
   // Transportation
   parking: CATEGORY.Transportation,
@@ -58,6 +74,13 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   bus: CATEGORY.Transportation,
   metro: CATEGORY.Transportation,
   subway: CATEGORY.Transportation,
+  // Spanish (no accents)
+  estacionamiento: CATEGORY.Transportation,
+  parqueadero: CATEGORY.Transportation,
+  gasolina: CATEGORY.Transportation,
+  tren: CATEGORY.Transportation,
+  autobus: CATEGORY.Transportation,
+  subte: CATEGORY.Transportation,
 
   // Travel
   flight: CATEGORY.Travel,
@@ -74,6 +97,15 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   hostel: CATEGORY.Travel,
   rental: CATEGORY.Travel,
   cruise: CATEGORY.Travel,
+  // Spanish (no accents)
+  vuelo: CATEGORY.Travel,
+  avion: CATEGORY.Travel,
+  viaje: CATEGORY.Travel,
+  vacaciones: CATEGORY.Travel,
+  hostal: CATEGORY.Travel,
+  alquiler: CATEGORY.Travel,
+  renta: CATEGORY.Travel,
+  crucero: CATEGORY.Travel,
 
   // Entertainment
   movie: CATEGORY.Entertainment,
@@ -82,6 +114,13 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   concert: CATEGORY.Entertainment,
   theater: CATEGORY.Entertainment,
   game: CATEGORY.Entertainment,
+  // Spanish (no accents)
+  pelicula: CATEGORY.Entertainment,
+  cine: CATEGORY.Entertainment,
+  concierto: CATEGORY.Entertainment,
+  teatro: CATEGORY.Entertainment,
+  juego: CATEGORY.Entertainment,
+  videojuegos: CATEGORY.Entertainment,
 
   // Shopping
   amazon: CATEGORY.Shopping,
@@ -90,6 +129,10 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   clothing: CATEGORY.Shopping,
   store: CATEGORY.Shopping,
   mall: CATEGORY.Shopping,
+  // Spanish (no accents)
+  ropa: CATEGORY.Shopping,
+  tienda: CATEGORY.Shopping,
+  "centro comercial": CATEGORY.Shopping,
 
   // Utilities
   electricity: CATEGORY.Utilities,
@@ -97,12 +140,21 @@ export const COMMON_WORD_CATEGORIES: Record<string, CategoryValue> = {
   internet: CATEGORY.Utilities,
   phone: CATEGORY.Utilities,
   wifi: CATEGORY.Utilities,
+  // Spanish (no accents)
+  electricidad: CATEGORY.Utilities,
+  agua: CATEGORY.Utilities,
+  telefono: CATEGORY.Utilities,
+  luz: CATEGORY.Utilities,
 
   // Fun
   bar: CATEGORY.Fun,
   club: CATEGORY.Fun,
   party: CATEGORY.Fun,
   drinks: CATEGORY.Fun,
+  // Spanish (no accents)
+  fiesta: CATEGORY.Fun,
+  tragos: CATEGORY.Fun,
+  bebidas: CATEGORY.Fun,
 };
 
 // Create a Fuse instance for category matching with stricter settings
@@ -124,8 +176,9 @@ export function suggestCategory(name: string): string | null {
     return null;
   }
 
-  // Split the name into words and convert to lowercase
-  const words = name.toLowerCase().split(/\s+/);
+  // Normalize accents and split the name into words in lowercase
+  const normalized = removeAccents(name.toLowerCase());
+  const words = normalized.split(/\s+/);
 
   // First try to match any word exactly against our common words dictionary
   for (const word of words) {
@@ -143,7 +196,7 @@ export function suggestCategory(name: string): string | null {
     }
   }
 
-  // If no common word matches, try fuzzy search on the full name against categories
-  const searchResult = categoryFuse.search(name)[0];
+  // If no common word matches, try fuzzy search on the full normalized name against categories
+  const searchResult = categoryFuse.search(normalized)[0];
   return searchResult?.item ?? null;
 }

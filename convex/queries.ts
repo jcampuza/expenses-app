@@ -6,7 +6,7 @@ type CheckUsersConnectionArgs = {
   userId: Id<"users">;
 };
 
-export async function checkUsersConnection(
+export async function assertUsersConnection(
   convex: QueryCtx,
   { connectionId, userId }: CheckUsersConnectionArgs,
 ) {
@@ -16,14 +16,14 @@ export async function checkUsersConnection(
     .first();
 
   if (!connection) {
-    return null;
+    throw new Error("Connection not found");
   }
 
   if (
     connection.inviterUserId !== userId &&
     connection.inviteeUserId !== userId
   ) {
-    return null;
+    throw new Error("Unauthorized to view activity for this connection");
   }
 
   return connection;

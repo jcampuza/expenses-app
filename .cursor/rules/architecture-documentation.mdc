@@ -1,0 +1,42 @@
+---
+alwaysApply: true
+description: Architecture and documentation guidelines for the expenses app
+---
+
+# Architecture Documentation Reference
+
+When making code changes, implementing features, or making architectural decisions, always consult the documentation in the `docs/` folder for guidance and established patterns.
+
+## Key Documentation Files
+
+### Component Architecture
+
+Reference [docs/component-architecture.md](mdc:docs/component-architecture.md) for:
+
+- Component organization (UI vs application components)
+- shadcn/ui usage patterns
+- When to use `components/ui/` vs root `components/` folder
+- Design system guidelines and best practices
+
+### Loading Patterns
+
+Reference [docs/loading-skeletons.md](mdc:docs/loading-skeletons.md) for:
+
+- Implementing loading states with Suspense boundaries
+- Creating appropriate skeleton components
+- Query strategy for dynamic loading
+- UX guidelines for loading experiences
+
+## Guidelines
+
+1. **Before implementing new components**: Check component architecture docs to determine proper placement and patterns
+2. **Before adding loading states**: Follow the established skeleton and Suspense boundary patterns
+3. **When extending UI components**: Follow shadcn/ui conventions and design system guidelines
+4. **For new features**: Consider how they fit within the documented architecture patterns
+
+## Documentation-First Approach
+
+- Always check existing documentation before implementing new patterns
+- Follow established conventions documented in the `docs/` folder
+- When creating new patterns, consider if they should be documented for future reference
+- Maintain consistency with documented architectural decisions

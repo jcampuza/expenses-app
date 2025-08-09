@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as audit from "../audit.js";
 import type * as connections from "../connections.js";
 import type * as crons from "../crons.js";
 import type * as exchangeRates from "../exchangeRates.js";
@@ -31,6 +32,7 @@ import type * as user from "../user.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  audit: typeof audit;
   connections: typeof connections;
   crons: typeof crons;
   exchangeRates: typeof exchangeRates;
