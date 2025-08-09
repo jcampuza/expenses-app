@@ -1,0 +1,10 @@
+# Tooling and Package Manager
+
+- Always use bun for running scripts and installing dependencies.
+- Prefer these commands:
+  - `bun run <script>` to run project scripts
+  - `bun install` to install dependencies
+  - Avoid `npm` and `yarn` commands.
+- Do not create `package-lock.json` or `yarn.lock`.
+- If a lockfile is needed, only `bun.lock` should exist.
+- If you need to add dependencies, prefer `bun add <pkg>` (or `bun add -d <pkg>` for dev deps).
