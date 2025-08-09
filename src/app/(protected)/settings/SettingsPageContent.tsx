@@ -53,14 +53,13 @@ import { Id } from "@convex/_generated/dataModel";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { AppLink } from "@/components/ui/app-link";
+import { GenerateInvitationDialog as GenerateInvitationDialogComponent } from "@/components/GenerateInvitationDialog";
+import { useSearchParams } from "next/navigation";
 
-type State =
-  | { status: "idle"; data: null; invitationLink: null }
-  | { status: "loading"; data: null; invitationLink: null }
-  | { status: "ready"; data: string; invitationLink: string };
 
 export function SettingsPageContent() {
   const user = useUser();
+  const searchParams = useSearchParams();
 
   if (!user.user) {
     return null;
@@ -70,6 +69,8 @@ export function SettingsPageContent() {
     name: user.user?.fullName ?? "",
     email: user.user?.emailAddresses[0]?.emailAddress ?? "",
   };
+
+  const autoOpenInvite = searchParams.get("openInvite") === "true";
 
   return (
     <div className="container p-4">
@@ -99,7 +100,8 @@ export function SettingsPageContent() {
 
         <div className="flex flex-col gap-4">
           <div>
-            <GenerateInvitationDialog />
+            {/* Reusable Invite dialog with optional auto-open via URL */}
+            <AutoOpenInvite generateOnMount={autoOpenInvite} />
           </div>
 
           <div>
@@ -170,110 +172,17 @@ function ExpireInvitationsDialog() {
   );
 }
 
-function GenerateInvitationDialog() {
-  const [state, setState] = useState<State>({
-    status: "idle",
-    data: null,
-    invitationLink: null,
-  });
-  const { toast } = useToast();
-
-  const { mutate: getInvitationLink, isPending } = useConvexMutation(
-    api.invitations.getInvitationLink,
-  );
-
-  const generateQRCode = async () => {
-    setState({ status: "loading", data: null, invitationLink: null });
-
-    try {
-      const dataFromMutation = await getInvitationLink();
-
-      if (dataFromMutation) {
-        const invitationLink = dataFromMutation.invitationLink;
-        const { renderSVG } = await import("uqr");
-        const svg = renderSVG(`${window.location.host}${invitationLink}`);
-        setState({
-          status: "ready",
-          data: svg,
-          invitationLink: `${window.location.host}${invitationLink}`,
-        });
-      } else {
-        setState({ status: "idle", data: null, invitationLink: null });
-      }
-    } catch (error) {
-      setState({ status: "idle", data: null, invitationLink: null });
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const close = () => {
-    setState({ status: "idle", data: null, invitationLink: null });
-  };
-
+function AutoOpenInvite({ generateOnMount }: { generateOnMount: boolean }) {
   return (
-    <Dialog
-      open={state.status === "ready"}
-      onOpenChange={(open: boolean) => {
-        if (!open) {
-          close();
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button onClick={() => generateQRCode()} className="flex">
-          <QrCode className="mr-2 h-4 w-4" />
-          Generate Invitation QR Code
-          {state.status === "loading" || isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : null}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="text-center">
-            Your Invitation QR Code
-          </DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col items-center justify-center p-4">
-          {state.data ? (
-            <div
-              className="mb-2"
-              style={{ width: 100 }}
-              dangerouslySetInnerHTML={{
-                __html: state.data,
-              }}
-            />
-          ) : null}
-          {/* Display the invitation link below the QR code */}
-          {state.invitationLink && (
-            <div className="mt-2 space-y-4 text-center">
-              <Button
-                onClick={() => {
-                  navigator.clipboard
-                    .writeText(state.invitationLink)
-                    .then(() => {
-                      toast({
-                        title: "Copied to clipboard",
-                        description: `Invitation link copied to clipboard: ${state.invitationLink}`,
-                        duration: 3000,
-                      });
-                    });
-                }}
-              >
-                Copy invitation link to clipboard
-              </Button>
-            </div>
-          )}
-          <p className="mt-4 text-center text-sm text-gray-500">
-            Scan QR code or send the link to someone to link your accounts
-          </p>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div>
+      <GenerateInvitationDialogComponent
+        triggerLabel="Generate Invitation QR Code"
+        triggerIcon={<QrCode className="mr-2 h-4 w-4" />}
+        buttonClassName="flex"
+        buttonSize="default"
+        autoOpenOnMount={generateOnMount}
+      />
+    </div>
   );
 }
 
