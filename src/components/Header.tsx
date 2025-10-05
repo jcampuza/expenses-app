@@ -1,11 +1,12 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useConvexAuth } from "convex/react";
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { CustomUserButton } from "@/components/CustomUserButton";
 
 export function Header() {
   const { isAuthenticated } = useConvexAuth();
@@ -15,12 +16,9 @@ export function Header() {
   const headerLink = isAuthenticated ? "/dashboard" : "/";
 
   return (
-    <header className="bg-accent flex items-center justify-between p-4">
+    <header className="bg-accent dark:bg-background flex items-center justify-between p-4 border-b">
       <div className="flex items-center gap-2">
-        <Link
-          href={headerLink}
-          className="inline-flex items-center gap-2 text-black"
-        >
+        <Link href={headerLink} className="inline-flex items-center gap-2">
           <Image
             src="/logo.webp"
             width={40}
@@ -42,7 +40,7 @@ export function Header() {
         </SignedOut>
 
         <SignedIn>
-          <UserButton userProfileUrl="/settings" />
+          <CustomUserButton />
         </SignedIn>
       </div>
     </header>

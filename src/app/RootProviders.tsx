@@ -7,6 +7,7 @@ import { ReactNode } from "react";
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexQueryClient } from "@convex-dev/react-query";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 interface ClientSet {
   convexClient: ConvexReactClient;
@@ -69,7 +70,7 @@ export function RootProviders({ children }: { children: ReactNode }) {
           client={clients.convexClient}
           useAuth={useAuth}
         >
-          {children}
+          <ThemeProvider>{children}</ThemeProvider>
         </ConvexProviderWithClerk>
       </ClerkProvider>
     </QueryClientProvider>

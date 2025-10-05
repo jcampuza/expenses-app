@@ -16,13 +16,13 @@ interface DismissibleAlertProps {
 }
 
 const variantStyles = {
-  info: "border-blue-200 border-l-4 bg-blue-50 text-blue-900 [&>svg]:text-blue-700",
+  info: "border-blue-500/20 border-l-4 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 [&>svg]:text-blue-600 dark:text-blue-400",
   warning:
-    "border-amber-200 border-l-4 bg-amber-50 text-amber-900 [&>svg]:text-amber-700",
+    "border-amber-200 border-l-4 bg-amber-50 dark:bg-amber-500/20 text-amber-900 dark:text-amber-400 [&>svg]:text-amber-700 dark:text-amber-400",
   success:
-    "border-green-200 border-l-4 bg-green-50 text-green-900 [&>svg]:text-green-700",
+    "border-green-500/20 border-l-4 bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 [&>svg]:text-green-600 dark:text-green-400",
   destructive:
-    "border-red-200 border-l-4 bg-red-50 text-red-900 [&>svg]:text-red-700",
+    "border-destructive/20 border-l-4 bg-destructive/10 text-destructive [&>svg]:text-destructive",
 };
 
 const variantIcons = {

@@ -77,23 +77,23 @@ export function ExpenseCardCompact({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 hover:shadow-md",
+        "relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-200 hover:shadow-md",
         className,
       )}
     >
       {/* Accent color strip on the left */}
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-[hsl(262.1,83.3%,57.8%)]" />
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-primary" />
 
       <div className="p-3 pl-4">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center">
-              <h3 className="truncate font-medium text-gray-900">{name}</h3>
-              <div className="ml-2 flex items-center text-xs text-gray-500">
+              <h3 className="truncate font-medium text-foreground">{name}</h3>
+              <div className="ml-2 flex items-center text-xs text-muted-foreground">
                 <Calendar className="mr-1 h-3 w-3" />
                 {date}
                 {updatedAt && (
-                  <span className="ml-2 italic text-[10px] text-gray-400">
+                  <span className="ml-2 italic text-[10px] text-muted-foreground/70">
                     Edited {new Date(updatedAt).toLocaleDateString()}
                   </span>
                 )}
@@ -107,26 +107,28 @@ export function ExpenseCardCompact({
                   className={cn(
                     "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                     whoOwes === "you"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-green-50 text-green-700",
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400",
                   )}
                 >
                   {oweText}
                 </span>
-                <span className="text-xs text-gray-500">{paidText}</span>
+                <span className="text-xs text-muted-foreground">
+                  {paidText}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 {isSplitEqually ? (
-                  <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                  <span className="rounded bg-blue-500/10 dark:bg-blue-500/20 px-2 py-0.5 text-xs text-blue-600 dark:text-blue-400">
                     Split equally
                   </span>
                 ) : (
-                  <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-700">
+                  <span className="rounded bg-yellow-500/10 dark:bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-600 dark:text-yellow-400">
                     Not split
                   </span>
                 )}
-                <span className="mx-1 h-1 w-1 rounded-full bg-gray-300" />
-                <span className="flex items-center text-xs text-gray-500">
+                <span className="mx-1 h-1 w-1 rounded-full bg-border" />
+                <span className="flex items-center text-xs text-muted-foreground">
                   {categoryIcon}
                   <span className="ml-1">{category}</span>
                 </span>
@@ -138,12 +140,14 @@ export function ExpenseCardCompact({
             <div
               className={cn(
                 "text-sm font-semibold",
-                whoOwes === "you" ? "text-red-500" : "text-green-500",
+                whoOwes === "you"
+                  ? "text-destructive"
+                  : "text-green-600 dark:text-green-400",
               )}
             >
               ${formattedAmount}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               {originalCurrency && originalCurrency !== "USD" ? (
                 <div className="flex flex-col">
                   <span>

@@ -211,7 +211,7 @@ export function AddExpenseForm({
 
         {/* USD equivalent display */}
         {selectedCurrency !== "USD" && exchangeRate && totalCost && (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-muted-foreground">
             ≈ ${(parseFloat(totalCost) / exchangeRate.rate).toFixed(2)} USD
           </div>
         )}
@@ -252,11 +252,11 @@ export function AddExpenseForm({
 
         {/* Exchange rate display */}
         {selectedCurrency !== "USD" && exchangeRate && (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-muted-foreground">
             <div>
               {exchangeRate.rate.toFixed(2)} {selectedCurrency} = 1 USD
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               (last updated: {new Date(exchangeRate.date).toLocaleDateString()})
             </div>
           </div>
@@ -309,8 +309,8 @@ export function AddExpenseForm({
 
       {/* Note for editing expenses */}
       {!isNewExpense && selectedCurrency !== "USD" && (
-        <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
-          <div className="text-sm text-blue-800">
+        <div className="mt-4 rounded-md border border-blue-500/20 bg-blue-500/10 dark:bg-blue-500/20 p-3">
+          <div className="text-sm text-blue-600 dark:text-blue-400">
             <strong>Note:</strong> When editing this expense, we&apos;ll use the
             latest exchange rate, not necessarily the exchange rate from when
             the expense was originally added.

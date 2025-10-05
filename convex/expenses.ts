@@ -3,11 +3,6 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { assertUsersConnection, getUsersSharedExpenses } from "./queries";
 import { getMeDocument, getExpensesByUserId } from "./helpers";
-import {
-  addExpenseCreatedAuditLog,
-  addExpenseDeletedAuditLog,
-  addExpenseUpdatedAuditLog,
-} from "./audit";
 
 // Validator for updating an expense
 const updateExpenseValidator = v.object({
@@ -235,9 +230,6 @@ export const addExpense = mutation({
       throw new Error("Failed to create expense");
     }
 
-    // Audit log: create
-    await addExpenseCreatedAuditLog(ctx, me._id, newExpense);
-
     return newExpense;
   },
 });
@@ -326,14 +318,6 @@ export const updateExpense = mutation({
       throw new Error("Failed to get updated expense");
     }
 
-    // Audit log: update
-    await addExpenseUpdatedAuditLog(
-      ctx,
-      me._id,
-      existingExpense,
-      updatedExpense,
-    );
-
     // Get existing user_expenses for this expense
     const existingUserExpenses = await ctx.db
       .query("user_expenses")
@@ -393,9 +377,6 @@ export const deleteExpense = mutation({
     }
 
     await ctx.db.delete(args.id);
-
-    // Audit log: delete (capture snapshot in before)
-    await addExpenseDeletedAuditLog(ctx, me._id, existingExpense);
 
     return { success: true };
   },

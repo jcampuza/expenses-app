@@ -53,6 +53,7 @@ import { Id } from "@convex/_generated/dataModel";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { AppLink } from "@/components/ui/app-link";
+import { ThemeSelector } from "@/components/ThemeSelector";
 
 type State =
   | { status: "idle"; data: null; invitationLink: null }
@@ -95,6 +96,10 @@ export function SettingsPageContent() {
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={userData.email} disabled />
+        </div>
+
+        <div className="space-y-2">
+          <ThemeSelector />
         </div>
 
         <div className="flex flex-col gap-4">
@@ -268,7 +273,7 @@ function GenerateInvitationDialog() {
               </Button>
             </div>
           )}
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Scan QR code or send the link to someone to link your accounts
           </p>
         </div>

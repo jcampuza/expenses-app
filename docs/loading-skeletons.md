@@ -10,39 +10,22 @@ This guide describes how we implement loading skeletons when data is fetched dyn
 
 ## Where to place Suspense boundaries
 
-- **Tab panes**: Wrap each tab’s content, not the entire tabs container.
+- **Content sections**: Wrap content sections that load data dynamically.
 - **Dialog content**: Wrap the dialog body that loads form data.
 - **Lists and sections**: Wrap the list/section that suspends, not the entire page.
 
-Example (tab panes):
+Example (expense content):
 
 ```tsx
 import { Suspense } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ExpensesTabContent } from "./ExpensesTabContent";
-import { ConnectionActivityFeed } from "./ConnectionActivityFeed";
-import { ExpensesTabSkeleton, ActivityTabSkeleton } from "./YourSkeletons";
+import { ExpensesTabSkeleton } from "./YourSkeletons";
 
 export function ExampleTabs({ connectionId }: { connectionId: string }) {
   return (
-    <Tabs defaultValue="expenses">
-      <TabsList>
-        <TabsTrigger value="expenses">Expenses</TabsTrigger>
-        <TabsTrigger value="activity">Activity</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="expenses">
-        <Suspense fallback={<ExpensesTabSkeleton />}>
-          <ExpensesTabContent connectionId={connectionId as any} />
-        </Suspense>
-      </TabsContent>
-
-      <TabsContent value="activity">
-        <Suspense fallback={<ActivityTabSkeleton />}>
-          <ConnectionActivityFeed connectionId={connectionId as any} />
-        </Suspense>
-      </TabsContent>
-    </Tabs>
+    <Suspense fallback={<ExpensesTabSkeleton />}>
+      <ExpensesTabContent connectionId={connectionId as any} />
+    </Suspense>
   );
 }
 ```

@@ -56,31 +56,4 @@ export default defineSchema({
     email: v.optional(v.string()),
     tokenIdentifier: v.string(),
   }).index("by_token_identifier", ["tokenIdentifier"]),
-
-  // Per-expense audit trail of changes
-  expense_audit_logs: defineTable({
-    expenseId: v.id("expenses"),
-    actorUserId: v.id("users"),
-    action: v.string(), // "create" | "update" | "delete"
-    // Array of changed fields with before/after values
-    changes: v.array(
-      v.object({
-        key: v.string(),
-        before: v.optional(v.string()), // store actual value
-        after: v.optional(v.string()),
-      }),
-    ),
-    note: v.optional(v.string()),
-  })
-    .index("by_expense", ["expenseId"])
-    .index("by_actor", ["actorUserId"])
-    .index("by_expense_and_action", ["expenseId", "action"]),
-
-  // Join table for fast "all my activity" queries
-  audit_log_recipients: defineTable({
-    logId: v.id("expense_audit_logs"),
-    userId: v.id("users"),
-  })
-    .index("by_user", ["userId"])
-    .index("by_log", ["logId"]),
 });

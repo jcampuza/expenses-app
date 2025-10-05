@@ -21,13 +21,13 @@ export type ConnectedUserSummary = {
 
 export const ConnectionsEmpty = () => {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+    <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <h2 className="mb-4 text-xl font-semibold">Welcome to Your Dashboard!</h2>
-      <p className="mb-4 text-gray-600 dark:text-gray-400">
+      <p className="mb-4 text-muted-foreground">
         Here you can manage your expenses and track your spending with friends
         and family.
       </p>
-      <p className="mb-6 text-gray-600 dark:text-gray-400">
+      <p className="mb-6 text-muted-foreground">
         Start sharing your expenses by going to your settings and sharing a
         verification code.
       </p>
@@ -61,20 +61,20 @@ export const ConnectionListItem = ({
     <li>
       <Link
         href={`/dashboard/connection/${connectionId}`}
-        className="block transform rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md dark:border-gray-800 dark:bg-gray-950"
+        className="block transform rounded-lg border border-border bg-card p-4 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {totalBalance > 0 ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400">
                 <TrendingUp className="h-5 w-5" />
               </div>
             ) : totalBalance < 0 ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
                 <TrendingDown className="h-5 w-5" />
               </div>
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <CheckCircle className="h-5 w-5" />
               </div>
             )}
@@ -86,18 +86,18 @@ export const ConnectionListItem = ({
                   Owes you {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : totalBalance < 0 ? (
-                <p className="text-sm text-red-600 dark:text-red-400">
+                <p className="text-sm text-destructive">
                   You owe {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   All debts settled
                 </p>
               )}
             </div>
           </div>
 
-          <ArrowUpRight className="h-5 w-5 text-gray-400" />
+          <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
         </div>
       </Link>
     </li>
