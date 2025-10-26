@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LoadingComponent } from "@/components/LoadingComponent";
-import DashboardContent from "./DashboardContent";
+
+import {
+  DashboardHeader,
+  DashboardSummary,
+  DashboardSummarySkeleton,
+} from "./DashboardContent";
+import {
+  ConnectedUsersList,
+  ConnectedUsersListSkeleton,
+} from "@/app/(protected)/dashboard/ConnectedUsersList";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -9,8 +17,23 @@ export const metadata: Metadata = {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={<LoadingComponent />}>
-      <DashboardContent />
-    </Suspense>
+    <main className="flex grow flex-col gap-4 p-4">
+      {/* Header */}
+      <DashboardHeader />
+
+      {/* Summary cards */}
+      <Suspense fallback={<DashboardSummarySkeleton />}>
+        <DashboardSummary />
+      </Suspense>
+
+      {/* Connections List */}
+      <div className="mt-3">
+        <div className="space-y-3">
+          <Suspense fallback={<ConnectedUsersListSkeleton />}>
+            <ConnectedUsersList />
+          </Suspense>
+        </div>
+      </div>
+    </main>
   );
 }

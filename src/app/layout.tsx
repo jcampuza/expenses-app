@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import { RootProviders } from "@/app/RootProviders";
 import "@/styles/globals.css";
+import { Suspense } from "react";
+import { LoadingComponent } from "@/components/LoadingComponent";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 export const metadata: Metadata = {
   title: {
@@ -26,13 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <RootProviders>
+    <ThemeProvider>
       <html lang="en">
         <body>
-          {children}
-          <Toaster />
+          <Suspense fallback={<LoadingComponent />}>
+            <RootProviders>
+              {children}
+              <Toaster />
+            </RootProviders>
+          </Suspense>
         </body>
       </html>
-    </RootProviders>
+    </ThemeProvider>
   );
 }

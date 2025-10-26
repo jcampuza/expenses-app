@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { X, Info, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,14 +39,11 @@ export function DismissibleAlert({
   variant = "info",
   className,
 }: DismissibleAlertProps) {
-  const [isDismissed, setIsDismissed] = useState(false);
-
-  useEffect(() => {
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
     const dismissed = localStorage.getItem(`alert-dismissed-${id}`);
-    if (dismissed === "true") {
-      setIsDismissed(true);
-    }
-  }, [id]);
+    return dismissed === "true";
+  });
 
   const handleDismiss = () => {
     localStorage.setItem(`alert-dismissed-${id}`, "true");

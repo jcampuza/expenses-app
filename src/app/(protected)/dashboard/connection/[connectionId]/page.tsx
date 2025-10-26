@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import { Id } from "@convex/_generated/dataModel";
-import { ConnectionsPageContainer } from "./ConnectionsPageContent";
+import {
+  ConnectionsPageHeader,
+  ConnectionsPageHeaderSkeleton,
+} from "./ConnectionPageHeader";
+import { Suspense } from "react";
+import {
+  AddExpenseDialogButton,
+  ConnectionExpenseList,
+  ConnectionExpenseListSkeleton,
+} from "@/app/(protected)/dashboard/connection/[connectionId]/ExpensesTabContent";
 
 export const metadata: Metadata = {
   title: "Connection",
@@ -12,14 +21,30 @@ interface PageProps {
   }>;
 }
 
-export const dynamic = "force-static";
-
 export default async function ConnectionPage({ params }: PageProps) {
-  const { connectionId } = await params;
+  const { connectionId: connectionIdString } = await params;
+  const connectionId = connectionIdString as Id<"user_connections">;
 
   return (
-    <ConnectionsPageContainer
-      connectionId={connectionId as Id<"user_connections">}
-    />
+    <div className="flex-1 p-4">
+      <div className="flex items-center justify-between">
+        <Suspense fallback={<ConnectionsPageHeaderSkeleton />}>
+          <ConnectionsPageHeader connectionId={connectionId} />
+        </Suspense>
+
+        <div className="hidden md:block">
+          <AddExpenseDialogButton
+            connectionId={connectionId}
+            variant="desktop"
+          />
+        </div>
+      </div>
+
+      <div className="mt-2">
+        <Suspense fallback={<ConnectionExpenseListSkeleton />}>
+          <ConnectionExpenseList connectionId={connectionId} />
+        </Suspense>
+      </div>
+    </div>
   );
 }
