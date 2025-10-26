@@ -33,8 +33,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AddExpenseForm } from "./AddExpenseForm";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonCard } from "@/components/Skeletons";
 
-export function ExpensesTabContent({
+export function ConnectionExpenseList({
   connectionId,
 }: {
   connectionId: Id<"user_connections">;
@@ -491,5 +493,19 @@ function EditExpenseDialogButton({
         </Suspense>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function ConnectionExpenseListSkeleton() {
+  return (
+    <div>
+      <Skeleton className="h-9 w-full" />
+      <div className="my-4" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, idx) => (
+          <SkeletonCard key={idx} />
+        ))}
+      </div>
+    </div>
   );
 }

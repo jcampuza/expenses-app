@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { Id } from "@convex/_generated/dataModel";
 import Link from "next/link";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@convex/_generated/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonCard } from "@/components/Skeletons";
 
 export type ConnectedUserSummary = {
   connectionId: Id<"user_connections">;
@@ -104,20 +109,34 @@ export const ConnectionListItem = ({
   );
 };
 
-export function ConnectedUsersList({
-  users,
-}: {
-  users: ConnectedUserSummary[];
-}) {
+export function ConnectedUsersList() {
+  const connectedUsers = useSuspenseQuery(
+    convexQuery(api.connections.getConnectedUsers, {}),
+  );
+
+  if (connectedUsers.data.length === 0) {
+    return <ConnectionsEmpty />;
+  }
+
   return (
     <ul className="space-y-3">
-      {users.map((user) => (
+      {connectedUsers.data.map((user) => (
         <ConnectionListItem
           key={user.connectionId}
           connectionId={user.connectionId}
           name={user.name}
           totalBalance={user.totalBalance}
         />
+      ))}
+    </ul>
+  );
+}
+
+export function ConnectedUsersListSkeleton() {
+  return (
+    <ul className="space-y-3">
+      {Array.from({ length: 3 }).map((_, idx) => (
+        <SkeletonCard key={idx} />
       ))}
     </ul>
   );

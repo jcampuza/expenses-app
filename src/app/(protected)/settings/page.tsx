@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LoadingComponent } from "@/components/LoadingComponent";
+import { SettingsPageSkeleton } from "@/components/Skeletons";
 import { SettingsPageContent } from "./SettingsPageContent";
 
 export const metadata: Metadata = {
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<LoadingComponent />}>
+    <Suspense fallback={<SettingsPageSkeleton />}>
       <SettingsPageContent />
     </Suspense>
   );
