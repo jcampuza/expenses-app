@@ -44,9 +44,8 @@ export function DashboardSummary() {
 export function DashboardSummarySkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3">
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-20 w-full border" />
+      <Skeleton className="h-20 w-full border" />
     </div>
   );
 }

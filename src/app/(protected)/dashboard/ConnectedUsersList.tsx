@@ -114,6 +114,10 @@ export function ConnectedUsersList() {
     convexQuery(api.connections.getConnectedUsers, {}),
   );
 
+  if (connectedUsers.data.length === 0) {
+    return <ConnectionsEmpty />;
+  }
+
   return (
     <ul className="space-y-3">
       {connectedUsers.data.map((user) => (
