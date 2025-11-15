@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ThemeSelector } from "@/components/ThemeSelector";
 
 export function CustomUserButton() {
   const { user } = useUser();
@@ -63,10 +62,6 @@ export function CustomUserButton() {
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <div className="p-2">
-          <ThemeSelector />
-        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
           <LogOut className="mr-2 h-4 w-4" />

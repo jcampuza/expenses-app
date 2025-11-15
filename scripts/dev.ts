@@ -75,8 +75,12 @@ async function run() {
     { prefix: "next:stdout", stream: next.stdout },
     { prefix: "next:stderr", stream: next.stderr },
   ].filter(
-    (s): s is { prefix: string; stream: ReadableStream<Uint8Array> } =>
-      s.stream !== undefined,
+    (
+      s,
+    ): s is {
+      prefix: string;
+      stream: ReadableStream<Uint8Array<ArrayBuffer>>;
+    } => s.stream !== undefined,
   );
 
   const tasks = streams.map(({ prefix, stream }) => {
