@@ -1,7 +1,6 @@
 "use client";
 
 import { usePersistUserEffect } from "@/hooks/use-persist-user";
-import { LoadingComponent } from "@/components/LoadingComponent";
 import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Loader2 } from "lucide-react";
