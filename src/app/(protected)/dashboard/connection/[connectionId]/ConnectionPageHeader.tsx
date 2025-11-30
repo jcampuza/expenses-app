@@ -42,8 +42,7 @@ export function ConnectionsPageHeader({
       <p
         className={cn(
           "mb-4",
-          expensesQuery.data.totalBalance > 0 &&
-            "text-green-600 dark:text-green-400",
+          expensesQuery.data.totalBalance > 0 && "text-green-700",
           expensesQuery.data.totalBalance < 0 && "text-destructive",
         )}
       >

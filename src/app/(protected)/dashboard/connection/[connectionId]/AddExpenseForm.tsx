@@ -309,8 +309,8 @@ export function AddExpenseForm({
 
       {/* Note for editing expenses */}
       {!isNewExpense && selectedCurrency !== "USD" && (
-        <div className="mt-4 rounded-md border border-blue-500/20 bg-blue-500/10 dark:bg-blue-500/20 p-3">
-          <div className="text-sm text-blue-600 dark:text-blue-400">
+        <div className="mt-4 rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
+          <div className="text-sm text-blue-600">
             <strong>Note:</strong> When editing this expense, we&apos;ll use the
             latest exchange rate, not necessarily the exchange rate from when
             the expense was originally added.

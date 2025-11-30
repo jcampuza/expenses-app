@@ -85,7 +85,7 @@ export function ExpenseCardCompact({
       <div
         className={cn(
           "absolute top-0 bottom-0 left-0 w-1",
-          whoOwes === "you" ? "bg-destructive" : "bg-green-500",
+          whoOwes === "you" ? "bg-destructive" : "bg-green-700",
         )}
       />
 
@@ -113,7 +113,7 @@ export function ExpenseCardCompact({
                     "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                     whoOwes === "you"
                       ? "bg-destructive/10 text-destructive"
-                      : "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400",
+                      : "bg-green-700/10 text-green-700",
                   )}
                 >
                   {oweText}
@@ -124,11 +124,11 @@ export function ExpenseCardCompact({
               </div>
               <div className="flex items-center gap-2">
                 {isSplitEqually ? (
-                  <span className="rounded bg-blue-500/10 dark:bg-blue-500/20 px-2 py-0.5 text-xs text-blue-600 dark:text-blue-400">
+                  <span className="rounded bg-blue-500/10 px-2 py-0.5 text-xs text-blue-600">
                     Split equally
                   </span>
                 ) : (
-                  <span className="rounded bg-yellow-500/10 dark:bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-600 dark:text-yellow-400">
+                  <span className="rounded bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-600">
                     Not split
                   </span>
                 )}
@@ -145,9 +145,7 @@ export function ExpenseCardCompact({
             <div
               className={cn(
                 "text-sm font-semibold",
-                whoOwes === "you"
-                  ? "text-destructive"
-                  : "text-green-600 dark:text-green-400",
+                whoOwes === "you" ? "text-destructive" : "text-green-700",
               )}
             >
               ${formattedAmount}

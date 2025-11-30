@@ -71,7 +71,7 @@ export const ConnectionListItem = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {totalBalance > 0 ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-700/10 text-green-700">
                 <TrendingUp className="h-5 w-5" />
               </div>
             ) : totalBalance < 0 ? (
@@ -87,7 +87,7 @@ export const ConnectionListItem = ({
             <div>
               <h3 className="font-medium">{name}</h3>
               {totalBalance > 0 ? (
-                <p className="text-sm text-green-600 dark:text-green-400">
+                <p className="text-sm text-green-700">
                   Owes you {formatDollars(Math.abs(totalBalance))}
                 </p>
               ) : totalBalance < 0 ? (
