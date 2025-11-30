@@ -85,7 +85,7 @@ export function ExpenseCardCompact({
       <div
         className={cn(
           "absolute top-0 bottom-0 left-0 w-1",
-          whoOwes === "you" ? "bg-destructive" : "bg-green-700",
+          whoOwes === "you" ? "bg-destructive" : "bg-success",
         )}
       />
 
@@ -113,7 +113,7 @@ export function ExpenseCardCompact({
                     "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                     whoOwes === "you"
                       ? "bg-destructive/10 text-destructive"
-                      : "bg-green-700/10 text-green-700",
+                      : "bg-success/10 text-success",
                   )}
                 >
                   {oweText}
@@ -145,7 +145,7 @@ export function ExpenseCardCompact({
             <div
               className={cn(
                 "text-sm font-semibold",
-                whoOwes === "you" ? "text-destructive" : "text-green-700",
+                whoOwes === "you" ? "text-destructive" : "text-success",
               )}
             >
               ${formattedAmount}

@@ -20,7 +20,7 @@ const variantStyles = {
   warning:
     "border-amber-200 border-l-4 bg-amber-50 text-amber-900 [&>svg]:text-amber-700",
   success:
-    "border-green-500/20 border-l-4 bg-green-500/10 text-green-600 [&>svg]:text-green-600",
+    "border-success/20 border-l-4 bg-success/10 text-success [&>svg]:text-success",
   destructive:
     "border-destructive/20 border-l-4 bg-destructive/10 text-destructive [&>svg]:text-destructive",
 };
