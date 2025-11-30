@@ -81,8 +81,13 @@ export function ExpenseCardCompact({
         className,
       )}
     >
-      {/* Accent color strip on the left */}
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-primary" />
+      {/* Accent color strip on the left - red if you owe, green if they owe */}
+      <div
+        className={cn(
+          "absolute top-0 bottom-0 left-0 w-1",
+          whoOwes === "you" ? "bg-destructive" : "bg-green-500",
+        )}
+      />
 
       <div className="p-3 pl-4">
         <div className="flex items-center justify-between">

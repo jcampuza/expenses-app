@@ -15,7 +15,7 @@ const exchangeRatesResponseSchema = z.object({
 
 type ExchangeRatesResponse = z.infer<typeof exchangeRatesResponseSchema>;
 
-const SUPPORTED_CURRENCIES = ["EUR", "GBP", "JPY", "MXN", "CAD", "CNY"];
+const SUPPORTED_CURRENCIES = ["ARS", "EUR", "GBP", "JPY", "MXN", "CAD", "CNY"];
 
 const fetchExchangeRates = async (): Promise<ExchangeRatesResponse> => {
   console.info("fetchExchangeRates start");

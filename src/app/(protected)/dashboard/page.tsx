@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function Dashboard() {
   return (
-    <main className="flex grow flex-col gap-4 p-4">
+    <main className="flex grow flex-col gap-4 p-4 mx-auto w-full max-w-3xl">
       {/* Header */}
       <DashboardHeader />
 

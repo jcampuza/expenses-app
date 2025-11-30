@@ -77,7 +77,7 @@ export default async function PublicHome() {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
             <span>Supports</span>
-            {["USD", "EUR", "GBP", "MXN", "CAD", "JPY"].map((c) => (
+            {["USD", "ARS", "EUR", "GBP", "MXN", "CAD", "JPY", "CNY"].map((c) => (
               <Badge key={c} variant="outline" className="font-normal">
                 {c}
               </Badge>
@@ -282,8 +282,8 @@ export default async function PublicHome() {
               </AccordionTrigger>
               <AccordionContent>
                 Yes. If an expense is in another currency, we convert using the
-                latest available rates so totals stay fair. We support USD, EUR,
-                GBP, MXN, CAD, and JPY today, and may add more in the future.
+                latest available rates so totals stay fair. We support USD, ARS,
+                EUR, GBP, MXN, CAD, JPY, and CNY.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="accounts">
