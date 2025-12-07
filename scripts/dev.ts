@@ -5,28 +5,10 @@ import { spawn } from "bun";
 const COLORS: Record<string, string> = {
   "convex:stdout": "\x1b[34m", // blue
   "convex:stderr": "\x1b[34m",
-  "next:stdout": "\x1b[32m", // green
-  "next:stderr": "\x1b[32m",
+  "web:stdout": "\x1b[32m", // green
+  "web:stderr": "\x1b[32m",
 };
 const RESET = "\x1b[0m";
-
-// a TransformStream that splits incoming strings into lines
-function makeLineSplitter() {
-  let buffer = "";
-  return new TransformStream<string, string>({
-    transform(chunk, ctrl) {
-      buffer += chunk;
-      const parts = buffer.split("\n");
-      buffer = parts.pop() ?? "";
-      for (const line of parts) {
-        ctrl.enqueue(line);
-      }
-    },
-    flush(ctrl) {
-      if (buffer.length) ctrl.enqueue(buffer);
-    },
-  });
-}
 
 // given a Uint8Array stream, turn it into an async-iterable of lines
 async function* lines(
@@ -63,7 +45,7 @@ async function run() {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const next = spawn(["bun", "run", "dev:next"], {
+  const web = spawn(["bun", "run", "dev:web"], {
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -72,8 +54,8 @@ async function run() {
   const streams = [
     { prefix: "convex:stdout", stream: convex.stdout },
     { prefix: "convex:stderr", stream: convex.stderr },
-    { prefix: "next:stdout", stream: next.stdout },
-    { prefix: "next:stderr", stream: next.stderr },
+    { prefix: "web:stdout", stream: web.stdout },
+    { prefix: "web:stderr", stream: web.stderr },
   ].filter(
     (
       s,
@@ -95,7 +77,7 @@ async function run() {
   // clean up on Ctrl-C
   const cleanup = () => {
     convex.kill();
-    next.kill();
+    web.kill();
     process.exit(0);
   };
 

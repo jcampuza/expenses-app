@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth, useUser } from "@clerk/nextjs";
-import Link from "next/link";
+import { useAuth, useUser } from "@clerk/clerk-react";
+import { Link } from "@tanstack/react-router";
 import { Settings, LogOut } from "lucide-react";
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -57,7 +57,7 @@ export function CustomUserButton() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings" className="flex items-center">
+          <Link to="/settings" className="flex items-center">
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </Link>

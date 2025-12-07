@@ -1,10 +1,9 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import Link from "next/link";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
+import { Link } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { CustomUserButton } from "@/components/CustomUserButton";
 
@@ -18,14 +17,14 @@ export function Header() {
   return (
     <header className="bg-accent flex items-center justify-between p-4 border-b">
       <div className="flex items-center gap-2">
-        <Link href={headerLink} className="inline-flex items-center gap-2">
-          <Image
+        <Link to={headerLink} className="inline-flex items-center gap-2">
+          <img
             src="/logo.webp"
             width={40}
             height={40}
             alt="Expenses App Logo"
             className="rounded-full"
-            priority
+            loading="lazy"
           />
 
           <span className="text-xl font-bold">ExpenseMate</span>

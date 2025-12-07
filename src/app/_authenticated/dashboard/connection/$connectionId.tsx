@@ -1,28 +1,25 @@
-import type { Metadata } from "next";
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
 import { Id } from "@convex/_generated/dataModel";
+
 import {
   ConnectionsPageHeader,
   ConnectionsPageHeaderSkeleton,
-} from "./ConnectionPageHeader";
-import { Suspense } from "react";
+} from "@/features/connection/ConnectionPageHeader";
 import {
   AddExpenseDialogButton,
   ConnectionExpenseList,
   ConnectionExpenseListSkeleton,
-} from "@/app/(protected)/dashboard/connection/[connectionId]/ExpensesTabContent";
+} from "@/features/connection/ExpensesTabContent";
 
-export const metadata: Metadata = {
-  title: "Connection",
-};
+export const Route = createFileRoute(
+  "/_authenticated/dashboard/connection/$connectionId",
+)({
+  component: ConnectionPage,
+});
 
-interface PageProps {
-  params: Promise<{
-    connectionId: string;
-  }>;
-}
-
-export default async function ConnectionPage({ params }: PageProps) {
-  const { connectionId: connectionIdString } = await params;
+function ConnectionPage() {
+  const { connectionId: connectionIdString } = Route.useParams();
   const connectionId = connectionIdString as Id<"user_connections">;
 
   return (

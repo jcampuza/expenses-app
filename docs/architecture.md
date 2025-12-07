@@ -136,8 +136,8 @@ Defined in `convex/crons.ts`:
 
 Set these environment variables (local and deployment):
 
-- `NEXT_PUBLIC_CONVEX_URL` – Convex deployment URL.
-- `NEXT_PUBLIC_CLERK_FRONTEND_API_URL` – Clerk frontend API URL (used by `convex/auth.config.ts`).
+- `VITE_CONVEX_URL` – Convex deployment URL.
+- `CLERK_DOMAIN` (or `VITE_CLERK_DOMAIN` for client) – Clerk frontend API domain (used by `convex/auth.config.ts`).
 - `FX_RATES_API_KEY` – API key for exchange rate provider.
 
 Build/Deploy:

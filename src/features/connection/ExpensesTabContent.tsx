@@ -1,6 +1,6 @@
 "use client";
 
-import {
+import React, {
   Suspense,
   useDeferredValue,
   useEffect,

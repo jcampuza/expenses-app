@@ -1,6 +1,4 @@
-"use client";
-
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 
 import { Input, Select } from "@/components/ui/input";
 import { NumberInput } from "@/components/NumberInput";
@@ -48,7 +46,6 @@ export function AddExpenseForm({
   className?: string;
   connectionId: Id<"user_connections">;
 }) {
-  // Track if category was manually selected
   const [isManualSelection, setIsManualSelection] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState(
     initialValues.currency,
@@ -75,15 +72,10 @@ export function AddExpenseForm({
     return c.currency === selectedCurrency;
   });
 
-  // Handle expense name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
 
-    // Only suggest categories for new expenses
     if (isNewExpense && categorySelectRef.current && newName.length >= 3) {
-      // Don't make new suggestions if:
-      // 1. User has manually selected a category (isManualSelection is true)
-      // 2. The current category is not None
       const currentCategory = categorySelectRef.current.value;
       const shouldSuggest =
         !isManualSelection || currentCategory === "None" || !currentCategory;
@@ -97,7 +89,6 @@ export function AddExpenseForm({
     }
   };
 
-  // Handle manual category selection
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCategory = e.target.value;
     if (selectedCategory === "None" || !selectedCategory) {
@@ -107,12 +98,10 @@ export function AddExpenseForm({
     }
   };
 
-  // Handle currency selection change
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCurrency(e.target.value);
   };
 
-  // Handle total cost change
   const handleTotalCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTotalCost(e.target.value);
   };
@@ -168,7 +157,6 @@ export function AddExpenseForm({
     });
   };
 
-  // Get the other user in the connection
   const otherUser =
     connection && me
       ? connection.data?.inviterUserId === me.data?._id
@@ -209,7 +197,6 @@ export function AddExpenseForm({
           onChange={handleTotalCostChange}
         />
 
-        {/* USD equivalent display */}
         {selectedCurrency !== "USD" && exchangeRate && totalCost && (
           <div className="mt-2 text-sm text-muted-foreground">
             ≈ ${(parseFloat(totalCost) / exchangeRate.rate).toFixed(2)} USD
@@ -250,7 +237,6 @@ export function AddExpenseForm({
           ))}
         </Select>
 
-        {/* Exchange rate display */}
         {selectedCurrency !== "USD" && exchangeRate && (
           <div className="mt-2 text-sm text-muted-foreground">
             <div>
@@ -307,7 +293,6 @@ export function AddExpenseForm({
         </Select>
       </div>
 
-      {/* Note for editing expenses */}
       {!isNewExpense && selectedCurrency !== "USD" && (
         <div className="mt-4 rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
           <div className="text-sm text-blue-600">

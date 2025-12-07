@@ -1,6 +1,5 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import {
   Loader2,
   QrCode,
@@ -53,6 +52,7 @@ import { Id } from "@convex/_generated/dataModel";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { AppLink } from "@/components/ui/app-link";
+import { useUser } from "@clerk/clerk-react";
 
 type State =
   | { status: "idle"; data: null; invitationLink: null }
