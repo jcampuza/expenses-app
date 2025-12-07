@@ -1,12 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext",
-      "dom.asynciterable"
-    ],
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "esnext", "dom.asynciterable"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,28 +13,25 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "types": ["vite/client", "bun-types"],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@convex/*": [
-        "./convex/*"
-      ]
+      "@/*": ["./src/*"],
+      "@convex/*": ["./convex/*"]
     }
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "src",
+    "convex",
+    "scripts",
+    "vite.config.ts",
+    "postcss.config.*",
+    "tailwind.config.*",
+    "eslint.config.mjs",
+    "src/routeTree.gen.ts",
+    "src/entry-client.tsx",
+    "src/entry-server.tsx",
+    "src/router.tsx",
+    "src/start.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules", ".next", ".output"]
 }

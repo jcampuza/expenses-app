@@ -1,15 +1,10 @@
-"use client";
-
+import React from "react";
 import { usePersistUserEffect } from "@/hooks/use-persist-user";
 import { Header } from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Loader2 } from "lucide-react";
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col">
       <div className="flex min-h-screen flex-col">
@@ -40,7 +35,6 @@ function ProtectedLayoutInnerPersistor({
     );
   }
 
-  // Once user is persisted, show the children/inner content
   return (
     <div className="relative container mx-auto flex grow flex-col">
       {children}

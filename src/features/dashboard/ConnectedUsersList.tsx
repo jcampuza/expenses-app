@@ -10,11 +10,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Id } from "@convex/_generated/dataModel";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@convex/_generated/api";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonCard } from "@/components/Skeletons";
 
 export type ConnectedUserSummary = {
@@ -38,7 +37,7 @@ export const ConnectionsEmpty = () => {
       </p>
 
       <Link
-        href="/settings"
+        to="/settings"
         className={
           buttonVariants({ variant: "default", size: "lg" }) +
           " group flex items-center gap-2"
@@ -65,7 +64,8 @@ export const ConnectionListItem = ({
   return (
     <li>
       <Link
-        href={`/dashboard/connection/${connectionId}`}
+        to="/dashboard/connection/$connectionId"
+        params={{ connectionId }}
         className="block transform rounded-lg border border-border bg-card p-4 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md"
       >
         <div className="flex items-center justify-between">

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ReactNode } from "react";
@@ -16,15 +16,14 @@ interface ClientSet {
 let browserClients: ClientSet | undefined = undefined;
 
 function createClients(): ClientSet {
-  // Create the Convex client
-  const convexClient = new ConvexReactClient(
-    process.env.NEXT_PUBLIC_CONVEX_URL!,
-  );
+  const convexUrl = import.meta.env.VITE_CONVEX_URL;
+  if (!convexUrl) {
+    throw new Error("Missing VITE_CONVEX_URL for Convex client");
+  }
 
-  // Create the Convex Query client
+  const convexClient = new ConvexReactClient(convexUrl);
   const convexQueryClient = new ConvexQueryClient(convexClient);
 
-  // Create the React Query client with Convex integration
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -34,7 +33,6 @@ function createClients(): ClientSet {
     },
   });
 
-  // Connect them together
   convexQueryClient.connect(queryClient);
 
   return {
@@ -46,11 +44,8 @@ function createClients(): ClientSet {
 
 function getClients(): ClientSet {
   if (typeof window === "undefined") {
-    // Server: always make new clients
     return createClients();
   } else {
-    // Browser: make new clients if we don't already have them
-    // This is to avoid creating new clients on every component unmount/remount
     if (!browserClients) {
       browserClients = createClients();
     }
@@ -58,12 +53,14 @@ function getClients(): ClientSet {
   }
 }
 
+const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
+
 export function RootProviders({ children }: { children: ReactNode }) {
   const clients = getClients();
 
   return (
     <QueryClientProvider client={clients.queryClient}>
-      <ClerkProvider>
+      <ClerkProvider publishableKey={clerkPublishableKey}>
         <ConvexProviderWithClerk
           client={clients.convexClient}
           useAuth={useAuth}

@@ -1,11 +1,8 @@
 import Footer from "@/components/Footer";
 import { Header } from "@/components/Header";
+import React from "react";
 
-export default function PublicLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col">
       <div className="flex min-h-screen flex-col">
