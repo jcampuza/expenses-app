@@ -19,14 +19,16 @@ export const Route = createFileRoute(
 )({
   loader: async ({ context, params }) => {
     const connectionId = params.connectionId as Id<"user_connections">;
-    await Promise.all([
-      context.clients.queryClient.ensureQueryData(
-        convexQuery(api.expenses.getSharedExpenses, { connectionId }),
-      ),
-      context.clients.queryClient.ensureQueryData(
-        convexQuery(api.user.getCurrentUserAuthenticated, {}),
-      ),
-    ]);
+
+    // Purposely not awaiting these queries so that if the route is loaded
+    // the route will still suspend and showing skeletons
+    void context.clients.queryClient.ensureQueryData(
+      convexQuery(api.expenses.getSharedExpenses, { connectionId }),
+    );
+
+    void context.clients.queryClient.ensureQueryData(
+      convexQuery(api.user.getCurrentUserAuthenticated, {}),
+    );
   },
   component: ConnectionPage,
 });
