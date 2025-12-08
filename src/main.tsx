@@ -2,12 +2,23 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { RootProviders } from "@/providers/RootProviders";
+import { getClients } from "@/lib/queryClient";
 import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+
 import "@/styles/globals.css";
 
-const router = createRouter({ routeTree, context: { auth: undefined! } });
+const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
+const clients = getClients();
+const router = createRouter({
+  routeTree,
+  context: { auth: undefined!, clients },
+  defaultPreload: "intent",
+});
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -15,7 +26,22 @@ declare module "@tanstack/react-router" {
   }
 }
 
-function InnerApp() {
+function RootProviders({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={clients.queryClient}>
+      <ClerkProvider publishableKey={clerkPublishableKey}>
+        <ConvexProviderWithClerk
+          client={clients.convexClient}
+          useAuth={useAuth}
+        >
+          {children}
+        </ConvexProviderWithClerk>
+      </ClerkProvider>
+    </QueryClientProvider>
+  );
+}
+
+function App() {
   const auth = useConvexAuth();
   if (auth.isLoading) {
     return (
@@ -28,14 +54,6 @@ function InnerApp() {
   return <RouterProvider router={router} context={{ auth }} />;
 }
 
-function App() {
-  return (
-    <RootProviders>
-      <InnerApp />
-    </RootProviders>
-  );
-}
-
 const container = document.getElementById("root");
 
 if (!container) {
@@ -44,6 +62,8 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <RootProviders>
+      <App />
+    </RootProviders>
   </StrictMode>,
 );

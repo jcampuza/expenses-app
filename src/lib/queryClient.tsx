@@ -1,13 +1,10 @@
 "use client";
 
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { ConvexReactClient } from "convex/react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import { ConvexQueryClient } from "@convex-dev/react-query";
 
-interface ClientSet {
+export interface ClientSet {
   convexClient: ConvexReactClient;
   convexQueryClient: ConvexQueryClient;
   queryClient: QueryClient;
@@ -42,7 +39,7 @@ function createClients(): ClientSet {
   };
 }
 
-function getClients(): ClientSet {
+export function getClients(): ClientSet {
   if (typeof window === "undefined") {
     return createClients();
   } else {
@@ -51,23 +48,4 @@ function getClients(): ClientSet {
     }
     return browserClients;
   }
-}
-
-const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
-
-export function RootProviders({ children }: { children: ReactNode }) {
-  const clients = getClients();
-
-  return (
-    <QueryClientProvider client={clients.queryClient}>
-      <ClerkProvider publishableKey={clerkPublishableKey}>
-        <ConvexProviderWithClerk
-          client={clients.convexClient}
-          useAuth={useAuth}
-        >
-          {children}
-        </ConvexProviderWithClerk>
-      </ClerkProvider>
-    </QueryClientProvider>
-  );
 }

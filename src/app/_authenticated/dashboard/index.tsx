@@ -1,12 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DashboardHeader } from "@/features/dashboard/DashboardContent";
-import { DashboardSummarySkeleton } from "@/features/dashboard/DashboardContent";
-import { DashboardSummary } from "@/features/dashboard/DashboardContent";
-import { ConnectedUsersListSkeleton } from "@/features/dashboard/ConnectedUsersList";
-import { ConnectedUsersList } from "@/features/dashboard/ConnectedUsersList";
+import { DashboardHeader } from "@/components/DashboardContent";
+import { DashboardSummarySkeleton } from "@/components/DashboardContent";
+import { DashboardSummary } from "@/components/DashboardContent";
+import { ConnectedUsersListSkeleton } from "@/components/ConnectedUsersList";
+import { ConnectedUsersList } from "@/components/ConnectedUsersList";
 import { Suspense } from "react";
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/dashboard/")({
+  loader: async ({ context }) => {
+    await context.clients.queryClient.ensureQueryData(
+      convexQuery(api.connections.getConnectedUsers, {}),
+    );
+  },
   component: RouteComponent,
 });
 

@@ -1,20 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { Id } from "@convex/_generated/dataModel";
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@convex/_generated/api";
 
 import {
   ConnectionsPageHeader,
   ConnectionsPageHeaderSkeleton,
-} from "@/features/connection/ConnectionPageHeader";
+} from "@/components/ConnectionPageHeader";
 import {
   AddExpenseDialogButton,
   ConnectionExpenseList,
   ConnectionExpenseListSkeleton,
-} from "@/features/connection/ExpensesTabContent";
+} from "@/components/ExpensesTabContent";
 
 export const Route = createFileRoute(
   "/_authenticated/dashboard/connection/$connectionId",
 )({
+  loader: async ({ context, params }) => {
+    const connectionId = params.connectionId as Id<"user_connections">;
+    await Promise.all([
+      context.clients.queryClient.ensureQueryData(
+        convexQuery(api.expenses.getSharedExpenses, { connectionId }),
+      ),
+      context.clients.queryClient.ensureQueryData(
+        convexQuery(api.user.getCurrentUserAuthenticated, {}),
+      ),
+    ]);
+  },
   component: ConnectionPage,
 });
 

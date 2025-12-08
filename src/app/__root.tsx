@@ -7,9 +7,11 @@ import {
 import { Toaster } from "@/components/ui/toaster";
 import React from "react";
 import { useConvexAuth } from "convex/react";
+import { ClientSet } from "@/lib/queryClient";
 
 export const Route = createRootRouteWithContext<{
   auth: ReturnType<typeof useConvexAuth>;
+  clients: ClientSet;
 }>()({
   head: () => ({
     meta: [
