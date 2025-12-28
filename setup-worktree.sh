@@ -1,7 +1,7 @@
 set -e
 
 # Provided by root script
-local worktree_root=$ROOT_WORKTREE_PATH
+worktree_root=$ROOT_WORKTREE_PATH
 
 bun ci
 
