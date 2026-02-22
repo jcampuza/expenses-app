@@ -1,167 +1,105 @@
-## Expenses App – Architecture
+## Expenses App Architecture
 
 ### Overview
 
-ExpenseMate is a Next.js App Router application with a Convex backend. It lets authenticated users create “connections” (1:1 pairs), log shared expenses (optionally in foreign currencies), and see per-connection balances in USD. Authentication is handled by Clerk. Currency conversion is performed using daily exchange rates stored in Convex.
+ExpenseMate is a Vite-powered React SPA that uses Convex for backend logic/data and Clerk for authentication.
+Users create 1:1 connections, record shared expenses, and track balances in USD.
+
+### Runtime Model
+
+- Frontend: static assets built by Vite and served by Cloudflare Workers assets.
+- Routing: TanStack Router on the client (SPA fallback required in hosting).
+- Backend: Convex functions (queries/mutations/actions/crons).
+- Auth: Clerk in the React app + Convex auth provider config.
 
 ### Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React 19, TanStack Query 5, Tailwind CSS 4, Radix UI
-- **Auth**: Clerk
-- **Backend**: Convex (functions, database, crons)
-- **Data fetching**: `@convex-dev/react-query` integration with TanStack Query
-- **Language/Tooling**: TypeScript, ESLint, Prettier, Bun
-
-### High-level Flow
-
-1. User signs in with Clerk. On protected routes, we persist/update the user in Convex.
-2. Users create connections (via invitations) to pair with another user.
-3. Within a connection, either user records an expense. If the expense currency is not USD, it is converted to USD using the latest stored exchange rate.
-4. The app stores line items for each participant in `user_expenses`, enabling per-user balances and connection totals.
-5. Background jobs refresh exchange rates daily and clean up expired invitations.
+- Frontend: React 19, Vite, TanStack Router, TanStack Query, Tailwind CSS, Radix UI
+- Backend: Convex
+- Auth: Clerk
+- Tooling: Bun, TypeScript, ESLint, Prettier
 
 ## Directory Structure
 
-```
-convex/                 # Convex backend: schema, functions, crons, auth
-  auth.config.ts        # Convex auth provider config (Clerk)
-  crons.ts              # Daily jobs (exchange rates, invitation cleanup)
-  exchangeRates.ts      # Fetch/store rates; queries for supported currencies
-  expenses.ts           # Expense CRUD and conversion logic
-  helpers.ts            # Common utility helpers (e.g., current user)
-  invitations.ts        # Invitation create/accept/expire flows
-  queries.ts            # Shared query helpers (connections, balances)
-  connections.ts        # Connected users list and connection details
-  schema.ts             # Database tables and indexes
-
-src/
-  app/
-    (public)/           # Public routes (home, auth)
-    (protected)/        # Guarded by middleware (dashboard, settings)
-    RootProviders.tsx   # Providers: Clerk, Convex, TanStack Query
-  components/           # UI components (Header, Footer, UI primitives)
-  hooks/                # React hooks (persist user, mutations, toasts)
-  lib/                  # Utilities and shared logic
+```text
+convex/                 # Convex schema, functions, cron jobs, auth config
+src/app/                # TanStack Router file-based routes
+src/components/         # App-level components
+src/components/ui/      # UI primitives
+src/hooks/              # App hooks
+src/lib/                # Shared utilities/clients
+scripts/                # Local development scripts
 ```
 
 ## Data Model (Convex)
 
 Defined in `convex/schema.ts`:
 
-- **users**: `{ name, email?, tokenIdentifier }` index: `by_token_identifier`
-- **user_connections**: `{ inviterUserId, inviteeUserId, acceptedAt }` indexes: `by_inviter_and_invitee`, `by_inviter`, `by_invitee`
-- **invitations**: `{ token, inviterUserId, expirationTime, isUsed, createdAt }` index: `by_token`
-- **expenses**: `{ name, date, category?, totalCost, currency, paidBy, originalCurrency?, originalTotalCost?, exchangeRate?, conversionDate? }`
-- **user_expenses**: `{ userId, expenseId, amountPaid, amountOwed }` indexes: `by_user`, `by_expense`
-- **exchange_rates**: `{ currency, rate, date }` indexes: `by_currency_and_date`, `by_date`
+- `users`
+- `user_connections`
+- `invitations`
+- `expenses`
+- `user_expenses`
+- `exchange_rates`
 
-Notes:
-
-- USD is the canonical currency for balances. If an expense is created in a foreign currency, the app looks up the most recent rate and stores both the original values and the converted USD values.
-- Indexes are used to efficiently query by user, expense, or currency/date.
+USD is canonical for balances. Non-USD expenses are converted via latest stored rates.
 
 ## Backend Modules (Convex)
 
-### Auth and User
+- `user.ts`: current user queries + persistence.
+- `connections.ts`: connected user list and connection detail.
+- `invitations.ts`: invitation create/read/accept and expiration cleanup.
+- `expenses.ts`: expense CRUD and split/conversion logic.
+- `exchangeRates.ts`: fetch/store exchange rates and lookup latest rate.
+- `crons.ts`: daily invitation cleanup and exchange-rate refresh.
 
-- `user.persist`: Creates/updates the `users` record based on Clerk identity.
-- `user.getCurrentUserForPersistence`: Returns the user or `null` to drive persistence.
-- `user.getCurrentUserAuthenticated`: Throws if unauthenticated; used on protected pages.
+## Frontend Data Flow
 
-### Connections and Invitations
+1. `src/main.tsx` creates app providers (Clerk + Convex + Query client).
+2. Protected routes in `src/app/_authenticated/*` gate access by auth state.
+3. On authenticated routes, `usePersistUserEffect` ensures user persistence in Convex.
+4. Queries/mutations run through `@convex-dev/react-query` + TanStack Query.
 
-- `connections.getConnectedUsers`: Lists all paired users for the current user, with computed total balance per connection.
-- `connections.getConnectionById`: Returns connection details.
-- `invitations.getInvitation`: Validates an invitation token and returns inviter info.
-- `invitations.acceptInvitation`: Marks invitation as used and inserts `user_connections`.
-- `invitations.deleteExpiredInvitations` (internal): Used by cron to expire old invites.
+## Environment and Configuration
 
-### Expenses and Balances
+### Frontend build-time variables
 
-- `expenses.addExpense`:
-  - Validates the connection includes the current user.
-  - If `currency !== "USD"`, finds latest `exchange_rates` for that currency.
-  - Converts to USD via `usd = originalTotal / rate` (rate is foreign units per USD).
-  - Inserts an `expenses` row and two `user_expenses` rows (payer and non-payer), calculating `amountPaid`/`amountOwed` depending on `splitEqually`.
-- `expenses.updateExpense`:
-  - Allows changing core fields and re-runs conversion if currency changes.
-  - Patches the `expenses` row and updates `user_expenses` amounts.
-- `expenses.getMyExpenses`: Convenience query for the current user’s expenses.
-- `expenses.getSharedExpenses`: Lists shared items between the two connection users and computes a per-item balance plus a `totalBalance`.
+- `VITE_CONVEX_URL`
+- `VITE_CLERK_PUBLISHABLE_KEY`
 
-### Exchange Rates
+### Convex deploy-time variables
 
-- `exchangeRates.fetchAndStoreExchangeRates` (internal action): Calls a 3rd-party API to fetch latest rates (base USD) for a supported set of currencies and stores them in `exchange_rates`.
-- `exchangeRates.storeExchangeRates` (internal mutation): Upserts the daily batch.
-- `exchangeRates.getLatestExchangeRate`: Returns `{ currency, rate, date }` for the requested currency (or `1` for USD).
-- Supported currencies are defined in `exchangeRates.ts` (e.g., EUR, GBP, JPY, MXN, CAD, CNY).
+- `CONVEX_DEPLOYMENT`
+- `CONVEX_DEPLOY_KEY`
 
-### Background Jobs (Crons)
+### Convex runtime variables
 
-Defined in `convex/crons.ts`:
+- `CLERK_FRONTEND_API_URL`
+- `FX_RATES_API_KEY`
 
-- Daily 06:00 UTC: `invitations.deleteExpiredInvitations`
-- Daily 06:00 UTC: `exchangeRates.fetchAndStoreExchangeRates`
+`convex/auth.config.ts` supports migration compatibility by resolving Clerk domain from:
 
-## Frontend Architecture
+1. `CLERK_FRONTEND_API_URL` (preferred)
+2. `NEXT_PUBLIC_CLERK_FRONTEND_API_URL`
+3. `VITE_CLERK_FRONTEND_API_URL`
 
-### Routing and Layouts
+## Build and Deploy
 
-- Public routes under `src/app/(public)`; protected routes under `src/app/(protected)`.
-- `src/middleware.ts` uses Clerk to redirect unauthenticated users away from protected routes and redirect authenticated users from public routes to `/dashboard`.
-- Protected layout (`(protected)/layout.tsx`) waits for user persistence before rendering children.
+- `bun run build`: Vite build.
+- `bun run cf:build`: deploy Convex then build frontend.
+- `bun run cf:deploy`: Wrangler deploy.
+- `wrangler.jsonc`: Cloudflare Worker config with SPA fallback routing.
 
-### Providers and Data Fetching
+`vercel.json` is still present temporarily for rollback during migration.
 
-- `src/app/RootProviders.tsx` wires up:
-  - ClerkProvider (auth)
-  - Convex React client + `@convex-dev/react-query` bridge
-  - TanStack Query client using Convex queryFn/hashFn integration
-- Queries are invoked via `convexQuery(api.module.fn, args)` and `useQuery`/`useSuspenseQuery` from TanStack Query.
-- Mutations are called via a thin wrapper hook `src/hooks/use-convex-mutation.ts` which exposes `{ mutate, isPending, isSuccess, error }` and normalizes error handling.
+## Local Development
 
-### Key Screens
+- `bun run dev`: runs frontend + Convex dev process.
+- `bun run dev:web`: frontend only.
+- `bun run dev:convex`: Convex only.
 
-- Dashboard (`(protected)/dashboard`): Lists connected users and their `totalBalance` via `connections.getConnectedUsers`.
-- Connection detail (`(protected)/dashboard/connection/[connectionId]`): Shows shared expenses, search, and an Add Expense flow which calls `expenses.addExpense`.
-- Settings (`(protected)/settings`): Invitation generation, management, expiration; list of connections.
+## Testing and Validation
 
-## Authentication & Authorization
-
-- Clerk is embedded at the edge via `src/middleware.ts` and in the app via `RootProviders`.
-- Server-side Convex functions check `ctx.auth.getUserIdentity()`; helper `getMeDocument` fetches the corresponding `users` row and throws on missing identity.
-- Invitations and expense mutations validate that the current user belongs to the referenced connection.
-
-## Environment & Configuration
-
-Set these environment variables (local and deployment):
-
-- `VITE_CONVEX_URL` – Convex deployment URL.
-- `CLERK_DOMAIN` (or `VITE_CLERK_DOMAIN` for client) – Clerk frontend API domain (used by `convex/auth.config.ts`).
-- `FX_RATES_API_KEY` – API key for exchange rate provider.
-
-Build/Deploy:
-
-- `vercel.json` sets a build command that runs `convex deploy` and then `bun run build`.
-- `next.config.ts` enables the React Compiler experimental flag.
-
-## Scripts & Local Development
-
-- `bun run dev` – Local dev runner (Next + Convex via `scripts/dev.ts`).
-- `bun run dev:next` / `bunx convex dev` – Run individually.
-- `bun run typecheck`, `bun run lint`, `bun test` – Quality gates.
-
-## Testing
-
-- Example tests live in `src/lib/categories.test.ts`. Run with `bun test`.
-
-## Performance and Data Integrity Notes
-
-- All read paths that filter by user, expense, or currency use Convex indexes where appropriate (`by_user`, `by_expense`, `by_currency_and_date`).
-- For currency conversion, the canonical balance accounting is in USD; original currency data is preserved on the expense for display/auditing.
-
-## Extending the System
-
-- Add new currencies: extend the `SUPPORTED_CURRENCIES` array and re-deploy; rates will populate on next cron.
-- Add new derived views: prefer computing from `user_expenses` so that you don’t need to traverse all expenses for a user.
-- Multi-party expenses: convert the `user_connections` model to a group construct and write N `user_expenses` rows per expense.
+- `bun run lint`
+- `bun run typecheck`
+- `bun test`

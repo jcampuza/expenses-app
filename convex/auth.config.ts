@@ -1,7 +1,18 @@
+const clerkFrontendApiUrl =
+  process.env.CLERK_FRONTEND_API_URL ??
+  process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL ??
+  process.env.VITE_CLERK_FRONTEND_API_URL;
+
+if (!clerkFrontendApiUrl) {
+  throw new Error(
+    "Missing Clerk frontend API URL. Set CLERK_FRONTEND_API_URL (preferred), NEXT_PUBLIC_CLERK_FRONTEND_API_URL, or VITE_CLERK_FRONTEND_API_URL.",
+  );
+}
+
 const authConfig = {
   providers: [
     {
-      domain: process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL,
+      domain: clerkFrontendApiUrl,
       applicationID: "convex",
     },
   ],
