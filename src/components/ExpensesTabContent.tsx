@@ -35,6 +35,29 @@ import {
 import { AddExpenseForm } from "./AddExpenseForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonCard } from "@/components/Skeletons";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
+
+function useGridColumns() {
+  const [columns, setColumns] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setColumns(3); // lg breakpoint
+      } else if (window.innerWidth >= 768) {
+        setColumns(2); // md breakpoint
+      } else {
+        setColumns(1);
+      }
+    };
+
+    handleResize(); // Initial call
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return columns;
+}
 
 export function ConnectionExpenseList({
   connectionId,
@@ -82,6 +105,36 @@ export function ConnectionExpenseList({
     return expensesQuery.data.items ?? [];
   }, [deferredSearchTerm, expensesQuery.data.items, fuseSearch]);
 
+  const columns = useGridColumns();
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  useEffect(() => {
+    const updateScrollMargin = () => {
+      if (!listRef.current) {
+        return;
+      }
+
+      setScrollMargin(
+        listRef.current.getBoundingClientRect().top + window.scrollY,
+      );
+    };
+
+    updateScrollMargin();
+    window.addEventListener("resize", updateScrollMargin);
+
+    return () => {
+      window.removeEventListener("resize", updateScrollMargin);
+    };
+  }, []);
+
+  const virtualizer = useWindowVirtualizer({
+    count: Math.ceil(searchItemsResponse.length / columns),
+    estimateSize: () => 180, // Approximate height of one row
+    overscan: 2,
+    scrollMargin,
+  });
+
   return (
     <>
       <div className="relative">
@@ -100,43 +153,73 @@ export function ConnectionExpenseList({
 
       <Separator className="my-4" />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {searchItemsResponse.map((expenseItem) => {
-          const currentUserExpense =
-            expenseItem.userAExpense.userId === me.data._id
-              ? expenseItem.userAExpense
-              : expenseItem.userBExpense;
-          const otherUserExpense =
-            expenseItem.userAExpense.userId === me.data._id
-              ? expenseItem.userBExpense
-              : expenseItem.userAExpense;
-          const splitEqually =
-            currentUserExpense.amountOwed > 0 &&
-            otherUserExpense.amountOwed > 0;
+      <div
+        ref={listRef}
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const rowItems = searchItemsResponse.slice(
+            virtualRow.index * columns,
+            (virtualRow.index + 1) * columns,
+          );
 
           return (
-            <EditExpenseDialogButton
-              key={expenseItem.expense._id}
-              currentUserId={me.data._id}
-              connectionId={connectionId}
-              id={expenseItem.expense._id}
-              name={expenseItem.expense.name}
-              date={new Date(expenseItem.expense.date)}
-              updatedAt={expenseItem.expense.updatedAt}
-              category={expenseItem.expense.category ?? null}
-              totalCost={expenseItem.expense.totalCost}
-              currency={expenseItem.expense.currency}
-              originalCurrency={expenseItem.expense.originalCurrency}
-              originalTotalCost={expenseItem.expense.originalTotalCost}
-              balance={expenseItem.balance}
-              paidBy={expenseItem.expense.paidBy}
-              splitEqually={splitEqually}
-            />
+            <div
+              key={virtualRow.key}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-2 lg:grid-cols-3"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+              }}
+            >
+              {rowItems.map((expenseItem) => {
+                const currentUserExpense =
+                  expenseItem.userAExpense.userId === me.data._id
+                    ? expenseItem.userAExpense
+                    : expenseItem.userBExpense;
+                const otherUserExpense =
+                  expenseItem.userAExpense.userId === me.data._id
+                    ? expenseItem.userBExpense
+                    : expenseItem.userAExpense;
+                const splitEqually =
+                  currentUserExpense.amountOwed > 0 &&
+                  otherUserExpense.amountOwed > 0;
+
+                return (
+                  <EditExpenseDialogButton
+                    key={expenseItem.expense._id}
+                    currentUserId={me.data._id}
+                    connectionId={connectionId}
+                    id={expenseItem.expense._id}
+                    name={expenseItem.expense.name}
+                    date={new Date(expenseItem.expense.date)}
+                    updatedAt={expenseItem.expense.updatedAt}
+                    category={expenseItem.expense.category ?? null}
+                    totalCost={expenseItem.expense.totalCost}
+                    currency={expenseItem.expense.currency}
+                    originalCurrency={expenseItem.expense.originalCurrency}
+                    originalTotalCost={expenseItem.expense.originalTotalCost}
+                    balance={expenseItem.balance}
+                    paidBy={expenseItem.expense.paidBy}
+                    splitEqually={splitEqually}
+                  />
+                );
+              })}
+            </div>
           );
         })}
       </div>
 
-      <div className="fixed right-6 bottom-6 z-50 md:hidden">
+      <div className="fixed bottom-6 right-6 z-50 md:hidden">
         <AddExpenseDialogButton connectionId={connectionId} variant="mobile" />
       </div>
     </>
