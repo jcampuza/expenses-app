@@ -4,6 +4,26 @@
   "compatibility_date": "2026-02-22",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "not_found_handling": "single-page-application",
+  },
+
+  "vars": {
+    "ENVIRONMENT": "production",
+    "CONVEX_DEPLOYMENT": "",
+    "CLERK_SECRET_KEY": "",
+    "VITE_CLERK_PUBLISHABLE_KEY": "",
+    "VITE_CONVEX_URL": "",
+  },
+
+  "env": {
+    "staging": {
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "CONVEX_DEPLOYMENT": "",
+        "CLERK_SECRET_KEY": "",
+        "VITE_CLERK_PUBLISHABLE_KEY": "",
+        "VITE_CONVEX_URL": "",
+      },
+    },
+  },
 }
