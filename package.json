@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vite build",
     "start": "vite preview --host",
-    "cf:build": "npx convex deploy --cmd \"bun run build\"",
+    "cf:build": "convex deploy --cmd \"bun run build\"",
     "cf:deploy": "wrangler deploy",
     "cf:deploy:dry-run": "wrangler deploy --dry-run",
     "lint": "eslint . --max-warnings=0",
