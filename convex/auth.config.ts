@@ -1,7 +1,4 @@
-const clerkFrontendApiUrl =
-  process.env.CLERK_FRONTEND_API_URL ??
-  process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL ??
-  process.env.VITE_CLERK_FRONTEND_API_URL;
+const clerkFrontendApiUrl = process.env.VITE_CLERK_FRONTEND_API_URL;
 
 if (!clerkFrontendApiUrl) {
   throw new Error(
