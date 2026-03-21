@@ -32,7 +32,7 @@ export const getExpensesByUserId = async (
 
   const expenses = await Promise.all(
     userExpenses.map(async (ue) => {
-      const expense = await ctx.db.get(ue.expenseId);
+      const expense = await ctx.db.get("expenses", ue.expenseId);
       return expense;
     }),
   );

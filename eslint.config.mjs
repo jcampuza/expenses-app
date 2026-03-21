@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import convexPlugin from "@convex-dev/eslint-plugin";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -13,6 +14,7 @@ export default defineConfig([
       "dist",
       ".output",
       "src/routeTree.gen.ts",
+      "next-env.d.ts",
     ],
   },
   {
@@ -26,6 +28,8 @@ export default defineConfig([
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {
@@ -39,4 +43,5 @@ export default defineConfig([
     },
   },
   reactHooks.configs.flat.recommended,
+  ...convexPlugin.configs.recommended,
 ]);

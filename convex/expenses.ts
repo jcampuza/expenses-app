@@ -51,7 +51,7 @@ export const getSharedExpenses = query({
 
     // 2. Get the other user's details
 
-    const otherUser = await ctx.db.get(otherUserId);
+    const otherUser = await ctx.db.get("users", otherUserId);
 
     if (!otherUser) {
       throw new Error("Other user not found");
@@ -76,7 +76,7 @@ const validateConnectionAndGetParticipants = async (
   connectionId: Id<"user_connections">,
   currentUserId: Id<"users">,
 ) => {
-  const connection = await ctx.db.get(connectionId);
+  const connection = await ctx.db.get("user_connections", connectionId);
 
   if (!connection) {
     throw new Error("Connection not found");
@@ -225,7 +225,7 @@ export const addExpense = mutation({
       }),
     ]);
 
-    const newExpense = await ctx.db.get(expenseId);
+    const newExpense = await ctx.db.get("expenses", expenseId);
     if (!newExpense) {
       throw new Error("Failed to create expense");
     }
@@ -242,7 +242,7 @@ export const updateExpense = mutation({
 
     const { id, connectionId } = args;
 
-    const connection = await ctx.db.get(connectionId);
+    const connection = await ctx.db.get("user_connections", connectionId);
 
     if (!connection) {
       throw new Error("Connection not found");
@@ -255,7 +255,7 @@ export const updateExpense = mutation({
       throw new Error("You are not a participant in this connection");
     }
 
-    const existingExpense = await ctx.db.get(id);
+    const existingExpense = await ctx.db.get("expenses", id);
     if (!existingExpense) {
       throw new Error("Expense not found");
     }
@@ -310,10 +310,10 @@ export const updateExpense = mutation({
       };
     }
 
-    await ctx.db.patch(id, updateData);
+    await ctx.db.patch("expenses", id, updateData);
 
     // Get updated expense data
-    const updatedExpense = await ctx.db.get(id);
+    const updatedExpense = await ctx.db.get("expenses", id);
     if (!updatedExpense) {
       throw new Error("Failed to get updated expense");
     }
@@ -332,13 +332,13 @@ export const updateExpense = mutation({
     for (const userExpense of existingUserExpenses) {
       if (userExpense.userId === payerId) {
         // Update the payer's record
-        await ctx.db.patch(userExpense._id, {
+        await ctx.db.patch("user_expenses", userExpense._id, {
           amountPaid: totalCost,
           amountOwed: splitEqually ? totalCost / 2 : 0,
         });
       } else {
         // Update the non-payer's record
-        await ctx.db.patch(userExpense._id, {
+        await ctx.db.patch("user_expenses", userExpense._id, {
           amountPaid: 0,
           amountOwed: splitEqually ? totalCost / 2 : totalCost,
         });
@@ -356,7 +356,7 @@ export const deleteExpense = mutation({
     const me = await getMeDocument(ctx);
 
     // Fetch the expense to verify ownership if necessary
-    const existingExpense = await ctx.db.get(args.id);
+    const existingExpense = await ctx.db.get("expenses", args.id);
     if (!existingExpense) {
       throw new Error("Expense not found");
     }
@@ -373,10 +373,10 @@ export const deleteExpense = mutation({
     }
 
     for (const ue of userExpenses) {
-      await ctx.db.delete(ue._id);
+      await ctx.db.delete("user_expenses", ue._id);
     }
 
-    await ctx.db.delete(args.id);
+    await ctx.db.delete("expenses", args.id);
 
     return { success: true };
   },

@@ -79,7 +79,7 @@ export async function getUsersSharedExpenses(
 
   // Get the actual expense documents for shared expenses
   const expenses = await Promise.all(
-    sharedExpenseIds.map((id) => convex.db.get(id)),
+    sharedExpenseIds.map((id) => convex.db.get("expenses", id)),
   );
 
   const validExpenses = expenses.filter(

@@ -45,7 +45,7 @@ export const persist = mutation({
       }
 
       if (Object.keys(updates).length > 0) {
-        await ctx.db.patch(user._id, updates);
+        await ctx.db.patch("users", user._id, updates);
 
         return {
           userId: user._id,

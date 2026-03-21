@@ -50,15 +50,15 @@ const AuthenticatedDashboardConnectionConnectionIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof PublicIndexRoute
   '/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
-  '/': typeof PublicIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/dashboard/connection/$connectionId': typeof AuthenticatedDashboardConnectionConnectionIdRoute
 }
 export interface FileRoutesByTo {
-  '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof PublicIndexRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/dashboard/connection/$connectionId': typeof AuthenticatedDashboardConnectionConnectionIdRoute
 }
@@ -74,13 +74,13 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/dashboard'
     | '/settings'
-    | '/'
     | '/dashboard/'
     | '/dashboard/connection/$connectionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings' | '/' | '/dashboard' | '/dashboard/connection/$connectionId'
+  to: '/' | '/settings' | '/dashboard' | '/dashboard/connection/$connectionId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -101,7 +101,7 @@ declare module '@tanstack/react-router' {
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
