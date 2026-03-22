@@ -15,7 +15,7 @@ export function Header() {
   const headerLink = isAuthenticated ? "/dashboard" : "/";
 
   return (
-    <header className="bg-accent flex items-center justify-between p-4 border-b">
+    <header className="flex items-center justify-between border-b bg-accent p-4">
       <div className="flex items-center gap-2">
         <Link to={headerLink} className="inline-flex items-center gap-2">
           <img

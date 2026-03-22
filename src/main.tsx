@@ -46,7 +46,7 @@ function App() {
   if (auth.isLoading) {
     return (
       <div className="relative container mx-auto flex grow flex-col items-center p-12">
-        <Loader2 className="text-primary h-10 w-10 animate-spin" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }

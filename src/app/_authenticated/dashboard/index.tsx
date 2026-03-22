@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/dashboard/")({
 
 function RouteComponent() {
   return (
-    <main className="flex grow flex-col gap-4 p-4 mx-auto w-full max-w-3xl">
+    <main className="mx-auto flex w-full max-w-3xl grow flex-col gap-4 p-4">
       <DashboardHeader />
 
       <Suspense fallback={<DashboardSummarySkeleton />}>

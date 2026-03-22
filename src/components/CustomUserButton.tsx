@@ -47,7 +47,7 @@ export function CustomUserButton() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-2">
-            <p className="text-sm font-medium leading-none">
+            <p className="text-sm leading-none font-medium">
               {user.fullName || "User"}
             </p>
             <p className="text-xs leading-none text-muted-foreground">

@@ -19,7 +19,7 @@ export function DashboardSummary() {
     <div className="grid grid-cols-2 gap-3">
       <Card>
         <CardHeader className="p-3">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
             <Users className="h-4 w-4" /> Connections
           </CardTitle>
         </CardHeader>
