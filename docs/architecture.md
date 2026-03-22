@@ -147,9 +147,9 @@ Build/Deploy:
 
 ## Scripts & Local Development
 
-- `bun run dev` – Local dev runner (Next + Convex via `scripts/dev.ts`).
-- `bun run dev:next` / `bunx convex dev` – Run individually.
-- `bun run typecheck`, `bun run lint`, `bun test` – Quality gates.
+- `bun run dev` – Local dev runner (Vite + Convex via `scripts/dev.ts`).
+- `bun run dev:web` / `bun run dev:convex` – Run individually.
+- `bun run typecheck`, `bun run lint`, `bun run test` – Quality gates.
 
 ## Testing
 

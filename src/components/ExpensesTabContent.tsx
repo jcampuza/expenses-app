@@ -146,7 +146,7 @@ export function ConnectionExpenseList({
           placeholder="Search..."
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground hidden md:block">
+        <kbd className="pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:block">
           /
         </kbd>
       </div>
@@ -219,7 +219,7 @@ export function ConnectionExpenseList({
         })}
       </div>
 
-      <div className="fixed bottom-6 right-6 z-50 md:hidden">
+      <div className="fixed right-6 bottom-6 z-50 md:hidden">
         <AddExpenseDialogButton connectionId={connectionId} variant="mobile" />
       </div>
     </>

@@ -81,7 +81,7 @@ function SettingsPage() {
         <Button asChild variant="ghost" className="hover:bg-transparent">
           <AppLink
             href="/dashboard"
-            className="text-primary inline-flex items-center"
+            className="inline-flex items-center text-primary"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -325,7 +325,7 @@ function ConnectedUsersTable() {
 
   if (!connectedUsers || connectedUsers.length === 0) {
     return (
-      <div className="text-muted-foreground rounded-lg border p-6 text-center">
+      <div className="rounded-lg border p-6 text-center text-muted-foreground">
         No connected users found. Generate an invitation to connect with others.
       </div>
     );

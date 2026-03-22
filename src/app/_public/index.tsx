@@ -60,7 +60,7 @@ function PublicHome() {
             <h1 className="mb-4 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">
               Track shared expenses and settle up effortlessly
             </h1>
-            <p className="text-muted-foreground mb-8 max-w-2xl text-balance">
+            <p className="mb-8 max-w-2xl text-balance text-muted-foreground">
               ExpenseMate helps you split bills, handle purchases in different
               currencies, and keep a clear running total with the people you
               share costs with. Fast, private, and easy—no spreadsheets needed.
@@ -95,7 +95,7 @@ function PublicHome() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Everything you need to split fairly
             </h2>
-            <p className="text-muted-foreground mt-2">
+            <p className="mt-2 text-muted-foreground">
               Powerful, simple features designed for everyday life—roommates,
               trips, couples, and more.
             </p>
@@ -182,7 +182,7 @@ function PublicHome() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               How it works
             </h2>
-            <p className="text-muted-foreground mt-2">
+            <p className="mt-2 text-muted-foreground">
               Three simple steps to stay in sync.
             </p>
           </div>
@@ -216,7 +216,7 @@ function PublicHome() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Why people choose ExpenseMate
             </h2>
-            <p className="text-muted-foreground mt-2">
+            <p className="mt-2 text-muted-foreground">
               Built for real-world sharing with reliability and clarity at its
               core.
             </p>
@@ -258,7 +258,7 @@ function PublicHome() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Frequently asked questions
             </h2>
-            <p className="text-muted-foreground mt-2">
+            <p className="mt-2 text-muted-foreground">
               Quick answers to common questions about how ExpenseMate works.
             </p>
           </div>
@@ -304,7 +304,7 @@ function PublicHome() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Split expenses fairly without spreadsheets
           </h2>
-          <p className="text-muted-foreground mt-3">
+          <p className="mt-3 text-muted-foreground">
             Get started in minutes and keep everyone on the same page.
           </p>
           <div className="mt-6 flex items-center justify-center gap-4">

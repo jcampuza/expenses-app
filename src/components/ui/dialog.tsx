@@ -38,7 +38,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed z-50 grid w-full gap-4 border shadow-lg duration-200",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed z-50 grid w-full gap-4 border bg-background shadow-lg duration-200",
         // Mobile: Full screen with scrolling
         "inset-0 h-full max-h-screen rounded-none p-4",
         // Desktop: Centered with max width and no scrolling
@@ -50,7 +50,7 @@ const DialogContent = React.forwardRef<
       <div className="mt-8 h-full overflow-y-auto sm:h-auto sm:overflow-visible">
         {children}
       </div>
-      <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none sm:top-4 sm:right-4">
+      <DialogPrimitive.Close className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground sm:top-4 sm:right-4">
         <X className="h-6 w-6 sm:h-4 sm:w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -108,7 +108,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-muted-foreground text-sm", className)}
+    className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
 ));
