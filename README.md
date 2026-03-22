@@ -168,6 +168,31 @@ Start by validating the app on the generated `workers.dev` hostname before attac
 
 Do not store secrets like `CLERK_SECRET_KEY` in Wrangler `vars`. Use Cloudflare secrets only if you later add a Worker script that actually needs them.
 
+### GitHub Actions deployment
+
+`.github/workflows/deploy-worker.yml` deploys:
+
+- `main` pushes to the default production Worker
+- all other branch pushes to the `staging` Wrangler environment
+- manual runs to either target via `workflow_dispatch`
+
+Configure these GitHub environment secrets in both `staging` and `production`:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+
+Configure these GitHub environment variables in both `staging` and `production`:
+
+- `VITE_CLERK_FRONTEND_API_URL`
+- `VITE_CLERK_PUBLISHABLE_KEY`
+- `VITE_CONVEX_URL`
+
+The workflow selects the GitHub Environment automatically:
+
+- `main` uses the `production` environment
+- other branches use the `staging` environment
+- manual runs use the environment chosen in `workflow_dispatch`
+
 ## Production Cutover Checklist
 
 Before switching traffic to Cloudflare, verify:

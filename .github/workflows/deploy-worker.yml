@@ -1,0 +1,117 @@
+name: Deploy Worker
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: true
+        type: string
+      environment:
+        description: Target Wrangler environment
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.ref != 'refs/heads/main' }}
+    steps:
+      - name: Resolve target environment and ref
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            target_env="${{ inputs.environment }}"
+            deploy_ref="${{ inputs.ref }}"
+          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            target_env="production"
+            deploy_ref="${GITHUB_SHA}"
+          else
+            target_env="staging"
+            deploy_ref="${GITHUB_SHA}"
+          fi
+
+          if [[ "${target_env}" == "staging" ]]; then
+            deploy_command="bun run cf:deploy:staging"
+          else
+            deploy_command="bun run cf:deploy"
+          fi
+
+          {
+            echo "target_env=${target_env}"
+            echo "deploy_ref=${deploy_ref}"
+            echo "deploy_command=${deploy_command}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve.outputs.deploy_ref }}
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Deploy Worker
+        id: deploy
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DEPLOY_COMMAND: ${{ steps.resolve.outputs.deploy_command }}
+          VITE_CLERK_FRONTEND_API_URL: ${{ vars.VITE_CLERK_FRONTEND_API_URL }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          output_file="$(mktemp)"
+          export WRANGLER_OUTPUT_FILE_PATH="${output_file}"
+
+          ${DEPLOY_COMMAND}
+
+          deploy_entry="$(
+            jq -sc 'map(select(.type == "deploy")) | last // {}' "${output_file}"
+          )"
+          deploy_url="$(jq -r '.targets[0] // ""' <<< "${deploy_entry}")"
+          version_id="$(jq -r '.version_id // ""' <<< "${deploy_entry}")"
+
+          {
+            echo "deploy_url=${deploy_url}"
+            echo "version_id=${version_id}"
+          } >> "${GITHUB_OUTPUT}"
+
+          {
+            echo "### Cloudflare Deploy"
+            echo ""
+            echo "- Environment: \`${{ steps.resolve.outputs.target_env }}\`"
+            if [[ -n "${deploy_url}" ]]; then
+              echo "- URL: ${deploy_url}"
+            fi
+            if [[ -n "${version_id}" ]]; then
+              echo "- Version: \`${version_id}\`"
+            fi
+            echo "- Commit: \`${{ steps.resolve.outputs.deploy_ref }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
