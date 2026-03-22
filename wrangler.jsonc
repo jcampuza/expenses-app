@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "preview_urls": true,
+  "workers_dev": true,
+  "name": "expenses-app",
+  "compatibility_date": "2026-03-22",
+  "vars": {
+    "APP_ENV": "production",
+    "VITE_CLERK_FRONTEND_API_URL": "https://clerk.expensemate.fyi",
+    "VITE_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuZXhwZW5zZW1hdGUuZnlpJA",
+    "VITE_CONVEX_URL": "https://dutiful-elk-562.convex.cloud"
+  },
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "staging": {
+      "workers_dev": true,
+      "vars": {
+        "APP_ENV": "staging",
+        "VITE_CLERK_FRONTEND_API_URL": "https://fun-mink-28.clerk.accounts.dev",
+        "VITE_CLERK_PUBLISHABLE_KEY": "pk_test_ZnVuLW1pbmstMjguY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "VITE_CONVEX_URL": "https://fantastic-gnu-547.convex.cloud"
+      }
+    }
+  }
+}
