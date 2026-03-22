@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "expenses-app-back-on-next",
+      "name": "expenses-app",
       "dependencies": {
         "@clerk/clerk-react": "^5.58.0",
         "@convex-dev/react-query": "^0.0.0-alpha.11",

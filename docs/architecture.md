@@ -2,11 +2,11 @@
 
 ### Overview
 
-ExpenseMate is a Next.js App Router application with a Convex backend. It lets authenticated users create “connections” (1:1 pairs), log shared expenses (optionally in foreign currencies), and see per-connection balances in USD. Authentication is handled by Clerk. Currency conversion is performed using daily exchange rates stored in Convex.
+ExpenseMate is a Vite single-page app built with TanStack Router and a Convex backend. It lets authenticated users create “connections” (1:1 pairs), log shared expenses (optionally in foreign currencies), and see per-connection balances in USD. Authentication is handled by Clerk. Currency conversion is performed using daily exchange rates stored in Convex.
 
 ### Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React 19, TanStack Query 5, Tailwind CSS 4, Radix UI
+- **Frontend**: Vite, TanStack Router, React 19, TanStack Query 5, Tailwind CSS 4, Radix UI
 - **Auth**: Clerk
 - **Backend**: Convex (functions, database, crons)
 - **Data fetching**: `@convex-dev/react-query` integration with TanStack Query
@@ -36,12 +36,13 @@ convex/                 # Convex backend: schema, functions, crons, auth
 
 src/
   app/
-    (public)/           # Public routes (home, auth)
-    (protected)/        # Guarded by middleware (dashboard, settings)
-    RootProviders.tsx   # Providers: Clerk, Convex, TanStack Query
+    _public/            # Public routes (home)
+    _authenticated/     # Authenticated routes (dashboard, settings)
+    __root.tsx          # Root route shell
   components/           # UI components (Header, Footer, UI primitives)
   hooks/                # React hooks (persist user, mutations, toasts)
   lib/                  # Utilities and shared logic
+  main.tsx              # App bootstrap and providers
 ```
 
 ## Data Model (Convex)
@@ -107,13 +108,13 @@ Defined in `convex/crons.ts`:
 
 ### Routing and Layouts
 
-- Public routes under `src/app/(public)`; protected routes under `src/app/(protected)`.
-- `src/middleware.ts` uses Clerk to redirect unauthenticated users away from protected routes and redirect authenticated users from public routes to `/dashboard`.
-- Protected layout (`(protected)/layout.tsx`) waits for user persistence before rendering children.
+- File-based TanStack Router routes live under `src/app`.
+- Public routes live under `src/app/_public`; authenticated routes live under `src/app/_authenticated`.
+- Authenticated route rendering depends on Clerk auth state plus the user persistence flow in `src/hooks/use-persist-user.tsx`.
 
 ### Providers and Data Fetching
 
-- `src/app/RootProviders.tsx` wires up:
+- `src/main.tsx` wires up:
   - ClerkProvider (auth)
   - Convex React client + `@convex-dev/react-query` bridge
   - TanStack Query client using Convex queryFn/hashFn integration
@@ -122,13 +123,13 @@ Defined in `convex/crons.ts`:
 
 ### Key Screens
 
-- Dashboard (`(protected)/dashboard`): Lists connected users and their `totalBalance` via `connections.getConnectedUsers`.
-- Connection detail (`(protected)/dashboard/connection/[connectionId]`): Shows shared expenses, search, and an Add Expense flow which calls `expenses.addExpense`.
-- Settings (`(protected)/settings`): Invitation generation, management, expiration; list of connections.
+- Dashboard (`src/app/_authenticated/dashboard`): Lists connected users and their `totalBalance` via `connections.getConnectedUsers`.
+- Connection detail (`src/app/_authenticated/dashboard/connection/$connectionId.tsx`): Shows shared expenses, search, and an Add Expense flow which calls `expenses.addExpense`.
+- Settings (`src/app/_authenticated/settings.tsx`): Invitation generation, management, expiration; list of connections.
 
 ## Authentication & Authorization
 
-- Clerk is embedded at the edge via `src/middleware.ts` and in the app via `RootProviders`.
+- Clerk is initialized in the client via `src/main.tsx`.
 - Server-side Convex functions check `ctx.auth.getUserIdentity()`; helper `getMeDocument` fetches the corresponding `users` row and throws on missing identity.
 - Invitations and expense mutations validate that the current user belongs to the referenced connection.
 
@@ -142,8 +143,8 @@ Set these environment variables (local and deployment):
 
 Build/Deploy:
 
-- `vercel.json` sets a build command that runs `convex deploy` and then `bun run build`.
-- `next.config.ts` enables the React Compiler experimental flag.
+- Frontend builds run through `vite.config.ts`.
+- Cloudflare static hosting is configured in `wrangler.jsonc`.
 
 ## Scripts & Local Development
 

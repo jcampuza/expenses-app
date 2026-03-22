@@ -12,7 +12,6 @@ export default defineConfig([
       "dist",
       ".output",
       "src/routeTree.gen.ts",
-      "next-env.d.ts",
     ],
   },
   {

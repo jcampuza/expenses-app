@@ -27,11 +27,7 @@
     "postcss.config.*",
     "tailwind.config.*",
     "eslint.config.mjs",
-    "src/routeTree.gen.ts",
-    "src/entry-client.tsx",
-    "src/entry-server.tsx",
-    "src/router.tsx",
-    "src/start.ts"
+    "src/routeTree.gen.ts"
   ],
   "exclude": ["node_modules", ".next", ".output"]
 }
