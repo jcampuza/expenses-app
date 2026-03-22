@@ -3,7 +3,15 @@ name: Deploy Worker
 on:
   push:
     branches:
-      - "**"
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch:
     inputs:
       ref:
@@ -20,17 +28,20 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   deploy:
     name: Deploy to Cloudflare
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     environment:
-      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      name: ${{ github.event_name == 'pull_request' && 'staging' || github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
     timeout-minutes: 20
     concurrency:
-      group: deploy-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.ref != 'refs/heads/main' }}
+      group: deploy-${{ github.workflow }}-${{ github.event_name == 'pull_request' && 'staging' || github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging') }}
     steps:
       - name: Resolve target environment and ref
         id: resolve
@@ -41,12 +52,15 @@ jobs:
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             target_env="${{ inputs.environment }}"
             deploy_ref="${{ inputs.ref }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            target_env="staging"
+            deploy_ref="${{ github.event.pull_request.head.sha }}"
           elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
             target_env="production"
             deploy_ref="${GITHUB_SHA}"
           else
-            target_env="staging"
-            deploy_ref="${GITHUB_SHA}"
+            echo "Unsupported event/ref combination"
+            exit 1
           fi
 
           if [[ "${target_env}" == "staging" ]]; then
@@ -74,15 +88,51 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Validate build environment
+        env:
+          TARGET_ENV: ${{ steps.resolve.outputs.target_env }}
+          VITE_CLERK_FRONTEND_API_URL: ${{ secrets.VITE_CLERK_FRONTEND_API_URL }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+
+          for name in VITE_CLERK_FRONTEND_API_URL VITE_CLERK_PUBLISHABLE_KEY VITE_CONVEX_URL; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing required GitHub Environment variable: ${name}"
+              missing=1
+            fi
+          done
+
+          if [[ "${missing}" -ne 0 ]]; then
+            echo "Expected these secrets on the GitHub Environment '${TARGET_ENV}':"
+            echo "- VITE_CLERK_FRONTEND_API_URL"
+            echo "- VITE_CLERK_PUBLISHABLE_KEY"
+            echo "- VITE_CONVEX_URL"
+            exit 1
+          fi
+
+          {
+            echo "### Build Environment"
+            echo ""
+            echo "- Target environment: \`${TARGET_ENV}\`"
+            echo "- VITE_CLERK_FRONTEND_API_URL: \`${VITE_CLERK_FRONTEND_API_URL}\`"
+            echo "- VITE_CONVEX_URL: \`${VITE_CONVEX_URL}\`"
+            echo "- VITE_CLERK_PUBLISHABLE_KEY present: \`yes\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Deploy Worker
         id: deploy
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           DEPLOY_COMMAND: ${{ steps.resolve.outputs.deploy_command }}
-          VITE_CLERK_FRONTEND_API_URL: ${{ vars.VITE_CLERK_FRONTEND_API_URL }}
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
+          VITE_CLERK_FRONTEND_API_URL: ${{ secrets.VITE_CLERK_FRONTEND_API_URL }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
         shell: bash
         run: |
           set -euo pipefail
@@ -115,3 +165,47 @@ jobs:
             fi
             echo "- Commit: \`${{ steps.resolve.outputs.deploy_ref }}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Comment on PR with staging URL
+        if: github.event_name == 'pull_request' && steps.deploy.outputs.deploy_url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.deploy_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_ENV: ${{ steps.resolve.outputs.target_env }}
+          VERSION_ID: ${{ steps.deploy.outputs.version_id }}
+          DEPLOY_REF: ${{ steps.resolve.outputs.deploy_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          marker='<!-- cf-staging-deploy -->'
+          run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="$(
+            printf '%s\n\n%s\n\n%s\n%s\n%s\n%s\n' \
+              "${marker}" \
+              "Staging deploy updated for this PR." \
+              "URL: ${DEPLOY_URL}" \
+              "Environment: ${TARGET_ENV}" \
+              "Commit: \`${DEPLOY_REF}\`" \
+              "Version: \`${VERSION_ID}\`"
+          )"
+          body="${body}"$'\n'"Run: ${run_url}"
+
+          comment_id="$(
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+              | jq -r '.[] | select(.user.login == "github-actions[bot]") | select(.body | contains("<!-- cf-staging-deploy -->")) | .id' \
+              | head -n1
+          )"
+
+          if [[ -n "${comment_id}" ]]; then
+            gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
+              --method PATCH \
+              --raw-field body="${body}" \
+              >/dev/null
+          else
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --method POST \
+              --raw-field body="${body}" \
+              >/dev/null
+          fi
