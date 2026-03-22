@@ -4,6 +4,7 @@ import { getMeDocument } from "./helpers";
 
 // Get an invitation link for a user
 export const getInvitationLink = mutation({
+  args: {},
   returns: v.object({
     invitationLink: v.string(),
   }),
@@ -36,6 +37,7 @@ export const getInvitationLink = mutation({
 
 // Expire all invitations for a user
 export const expireAllInvitations = mutation({
+  args: {},
   returns: v.null(),
   handler: async (ctx) => {
     const user = await ctx.auth.getUserIdentity();
@@ -50,7 +52,7 @@ export const expireAllInvitations = mutation({
 
     // Update each invitation to be expired
     for (const invitation of invitations) {
-      await ctx.db.patch(invitation._id, {
+      await ctx.db.patch("invitations", invitation._id, {
         expirationTime: new Date(0).toISOString(), // Set to epoch time to expire
       });
     }
@@ -97,7 +99,7 @@ export const getInvitation = query({
     }
 
     // Get the inviter's information
-    const inviter = await ctx.db.get(invitation.inviterUserId);
+    const inviter = await ctx.db.get("users", invitation.inviterUserId);
     if (!inviter) {
       throw new Error("Inviter not found");
     }
@@ -159,7 +161,7 @@ export const acceptInvitation = mutation({
       throw new Error("Invitation has expired");
     }
 
-    const inviter = await ctx.db.get(invitation.inviterUserId);
+    const inviter = await ctx.db.get("users", invitation.inviterUserId);
     if (!inviter) {
       throw new Error("Inviter not found");
     }
@@ -170,7 +172,7 @@ export const acceptInvitation = mutation({
     }
 
     // Mark the invitation as used
-    await ctx.db.patch(invitation._id, {
+    await ctx.db.patch("invitations", invitation._id, {
       isUsed: true,
     });
 
@@ -186,6 +188,7 @@ export const acceptInvitation = mutation({
 });
 
 export const deleteExpiredInvitations = internalMutation({
+  args: {},
   handler: async (ctx) => {
     const invitations = await ctx.db
       .query("invitations")
@@ -200,7 +203,7 @@ export const deleteExpiredInvitations = internalMutation({
     for (const invitation of invitations) {
       const expirationTime = new Date(invitation.expirationTime).getTime();
       if (expirationTime < Date.now()) {
-        await ctx.db.delete(invitation._id);
+        await ctx.db.delete("invitations", invitation._id);
       }
     }
   },

@@ -15,7 +15,7 @@ export const getConnectionById = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const connection = await ctx.db.get(args.id);
+    const connection = await ctx.db.get("user_connections", args.id);
 
     if (!connection) {
       return null;
@@ -62,7 +62,7 @@ export const getConnectedUsers = query({
           userIdB: otherUserId,
         });
 
-        const otherUser = await ctx.db.get(otherUserId);
+        const otherUser = await ctx.db.get("users", otherUserId);
 
         return {
           connectionId: connection._id,
@@ -105,7 +105,7 @@ export const getConnectedUsersForSettings = query({
             ? connection.inviterUserId
             : connection.inviteeUserId;
 
-        const otherUser = await ctx.db.get(otherUserId);
+        const otherUser = await ctx.db.get("users", otherUserId);
 
         return {
           connectionId: connection._id,
@@ -128,7 +128,7 @@ export const deleteConnection = mutation({
     const me = await getMeDocument(ctx);
 
     // Get the connection to verify the user is part of it
-    const connection = await ctx.db.get(args.connectionId);
+    const connection = await ctx.db.get("user_connections", args.connectionId);
 
     if (!connection) {
       throw new Error("Connection not found");
@@ -156,17 +156,17 @@ export const deleteConnection = mutation({
 
     // Delete all user_expenses entries for shared expenses
     for (const item of sharedExpenses.items) {
-      await ctx.db.delete(item.userAExpense._id);
-      await ctx.db.delete(item.userBExpense._id);
+      await ctx.db.delete("user_expenses", item.userAExpense._id);
+      await ctx.db.delete("user_expenses", item.userBExpense._id);
     }
 
     // Delete all shared expenses
     for (const item of sharedExpenses.items) {
-      await ctx.db.delete(item.expense._id);
+      await ctx.db.delete("expenses", item.expense._id);
     }
 
     // Finally, delete the connection
-    await ctx.db.delete(args.connectionId);
+    await ctx.db.delete("user_connections", args.connectionId);
 
     return null;
   },
