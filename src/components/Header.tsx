@@ -33,7 +33,7 @@ export function Header() {
 
       <div className="flex items-center">
         <SignedOut>
-          <SignInButton>
+          <SignInButton mode="modal">
             <Button variant={"link"}>Sign in</Button>
           </SignInButton>
         </SignedOut>

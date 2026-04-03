@@ -6,11 +6,11 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/toaster";
 import React from "react";
-import { useConvexAuth } from "convex/react";
 import { ClientSet } from "@/lib/queryClient";
+import { PersistUserAuth } from "@/hooks/use-persist-user";
 
 export const Route = createRootRouteWithContext<{
-  auth: ReturnType<typeof useConvexAuth>;
+  auth: PersistUserAuth;
   clients: ClientSet;
 }>()({
   head: () => ({

@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { getClients } from "@/lib/queryClient";
-import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
@@ -11,6 +10,7 @@ import { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "@/styles/globals.css";
+import { usePersistUserEffect } from "@/hooks/use-persist-user";
 
 const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
 const clients = getClients();
@@ -42,11 +42,24 @@ function RootProviders({ children }: { children: ReactNode }) {
 }
 
 function App() {
-  const auth = useConvexAuth();
+  const auth = usePersistUserEffect();
   if (auth.isLoading) {
     return (
       <div className="relative container mx-auto flex grow flex-col items-center p-12">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (auth.status === "error") {
+    return (
+      <div className="relative container mx-auto flex grow flex-col items-center justify-center gap-2 p-12 text-center">
+        <p className="text-sm font-medium text-foreground">
+          We couldn&apos;t finish setting up your account.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Refresh and try signing in again.
+        </p>
       </div>
     );
   }

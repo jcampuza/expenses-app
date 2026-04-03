@@ -29,7 +29,7 @@ import { PublicLayout } from "@/components/PublicLayout";
 export const Route = createFileRoute("/_public/")({
   component: PublicHome,
   beforeLoad: async ({ context }) => {
-    if (context.auth.isAuthenticated) {
+    if (context.auth.status === "ready") {
       redirect({ to: "/dashboard", replace: true, throw: true });
     }
   },
@@ -67,7 +67,7 @@ function PublicHome() {
             </p>
 
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <SignInButton>
+              <SignInButton mode="modal">
                 <Button size="lg">Get started free</Button>
               </SignInButton>
               <a href="#features" className="w-full sm:w-auto">
@@ -308,7 +308,7 @@ function PublicHome() {
             Get started in minutes and keep everyone on the same page.
           </p>
           <div className="mt-6 flex items-center justify-center gap-4">
-            <SignInButton>
+            <SignInButton mode="modal">
               <Button size="lg">Start now</Button>
             </SignInButton>
             <a href="#features">
