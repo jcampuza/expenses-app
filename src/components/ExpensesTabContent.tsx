@@ -270,9 +270,7 @@ function ExpenseDialogButton({
         <span
           className={cn(
             "overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out",
-            showText
-              ? "ml-2 max-w-[200px] opacity-100"
-              : "ml-0 max-w-0 opacity-0",
+            showText ? "ml-2 max-w-50 opacity-100" : "ml-0 max-w-0 opacity-0",
           )}
         >
           Add Expense

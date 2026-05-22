@@ -34,8 +34,9 @@ export const Route = createFileRoute(
 });
 
 function ConnectionPage() {
-  const { connectionId: connectionIdString } = Route.useParams();
-  const connectionId = connectionIdString as Id<"user_connections">;
+  const connectionId = Route.useParams({
+    select: (p) => p.connectionId as Id<"user_connections">,
+  });
 
   return (
     <div className="flex-1 p-4">
