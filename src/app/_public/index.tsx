@@ -67,7 +67,7 @@ function PublicHome() {
             </p>
 
             <div className="flex flex-col items-center gap-3 sm:flex-row">
-              <SignInButton mode="modal">
+              <SignInButton mode="redirect">
                 <Button size="lg">Get started free</Button>
               </SignInButton>
               <a href="#features" className="w-full sm:w-auto">

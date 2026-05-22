@@ -10,7 +10,7 @@ import { api } from "@convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/dashboard/")({
   loader: async ({ context }) => {
-    void context.clients.queryClient.ensureQueryData(
+    await context.clients.queryClient.ensureQueryData(
       convexQuery(api.connections.getConnectedUsers, {}),
     );
   },

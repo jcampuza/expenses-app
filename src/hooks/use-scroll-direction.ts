@@ -1,27 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type ScrollDirection = "UP" | "DOWN" | "IDLE";
 
 export function useScrollDirection(): { scrollDirection: ScrollDirection } {
   const [scrollDirection, setScrollDirection] =
     useState<ScrollDirection>("IDLE");
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      const lastScrollY = lastScrollYRef.current;
 
       // Skip if we're at the same position
       if (currentScrollY === lastScrollY) return;
 
       // Determine scroll direction
-      if (currentScrollY > lastScrollY) {
-        setScrollDirection("DOWN");
-      } else {
-        setScrollDirection("UP");
-      }
-
-      setLastScrollY(currentScrollY);
+      const scrollDirection = currentScrollY > lastScrollY ? "DOWN" : "UP";
+      setScrollDirection(scrollDirection);
+      lastScrollYRef.current = currentScrollY;
     };
 
     // Add scroll event listener
@@ -29,7 +26,7 @@ export function useScrollDirection(): { scrollDirection: ScrollDirection } {
 
     // Cleanup
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   return { scrollDirection };
 }

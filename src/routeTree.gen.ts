@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './app/__root'
 import { Route as AuthenticatedRouteRouteImport } from './app/_authenticated/route'
 import { Route as PublicIndexRouteImport } from './app/_public/index'
 import { Route as AuthenticatedSettingsRouteImport } from './app/_authenticated/settings'
-import { Route as AuthenticatedDashboardRouteRouteImport } from './app/_authenticated/dashboard/route'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './app/_authenticated/dashboard/index'
 import { Route as AuthenticatedDashboardConnectionConnectionIdRouteImport } from './app/_authenticated/dashboard/connection/$connectionId'
 
@@ -30,28 +29,21 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashboardRouteRoute =
-  AuthenticatedDashboardRouteRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedDashboardIndexRoute =
   AuthenticatedDashboardIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+    id: '/dashboard/',
+    path: '/dashboard/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDashboardConnectionConnectionIdRoute =
   AuthenticatedDashboardConnectionConnectionIdRouteImport.update({
-    id: '/connection/$connectionId',
-    path: '/connection/$connectionId',
-    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+    id: '/dashboard/connection/$connectionId',
+    path: '/dashboard/connection/$connectionId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
-  '/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/dashboard/connection/$connectionId': typeof AuthenticatedDashboardConnectionConnectionIdRoute
@@ -65,7 +57,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_public/': typeof PublicIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
@@ -75,7 +66,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
     | '/settings'
     | '/dashboard/'
     | '/dashboard/connection/$connectionId'
@@ -84,7 +74,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
-    | '/_authenticated/dashboard'
     | '/_authenticated/settings'
     | '/_public/'
     | '/_authenticated/dashboard/'
@@ -119,56 +108,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard/': {
       id: '/_authenticated/dashboard/'
-      path: '/'
+      path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
-      parentRoute: typeof AuthenticatedDashboardRouteRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard/connection/$connectionId': {
       id: '/_authenticated/dashboard/connection/$connectionId'
-      path: '/connection/$connectionId'
+      path: '/dashboard/connection/$connectionId'
       fullPath: '/dashboard/connection/$connectionId'
       preLoaderRoute: typeof AuthenticatedDashboardConnectionConnectionIdRouteImport
-      parentRoute: typeof AuthenticatedDashboardRouteRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedDashboardRouteRouteChildren {
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
   AuthenticatedDashboardConnectionConnectionIdRoute: typeof AuthenticatedDashboardConnectionConnectionIdRoute
 }
 
-const AuthenticatedDashboardRouteRouteChildren: AuthenticatedDashboardRouteRouteChildren =
-  {
-    AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
-    AuthenticatedDashboardConnectionConnectionIdRoute:
-      AuthenticatedDashboardConnectionConnectionIdRoute,
-  }
-
-const AuthenticatedDashboardRouteRouteWithChildren =
-  AuthenticatedDashboardRouteRoute._addFileChildren(
-    AuthenticatedDashboardRouteRouteChildren,
-  )
-
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedDashboardRouteRoute: typeof AuthenticatedDashboardRouteRouteWithChildren
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-}
-
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedDashboardRouteRoute:
-    AuthenticatedDashboardRouteRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  AuthenticatedDashboardConnectionConnectionIdRoute:
+    AuthenticatedDashboardConnectionConnectionIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
