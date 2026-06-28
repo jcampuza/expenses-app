@@ -49,7 +49,9 @@ export default defineSchema({
     expirationTime: v.string(), // ISO string
     isUsed: v.boolean(),
     createdAt: v.string(), // ISO string
-  }).index("by_token", ["token"]),
+  })
+    .index("by_token", ["token"])
+    .index("by_inviter_user_id", ["inviterUserId"]),
 
   users: defineTable({
     name: v.string(),
