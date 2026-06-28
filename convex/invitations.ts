@@ -40,14 +40,11 @@ export const expireAllInvitations = mutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const user = await ctx.auth.getUserIdentity();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const me = await getMeDocument(ctx);
 
     const invitations = await ctx.db
       .query("invitations")
-      .filter((q) => q.eq(q.field("inviterUserId"), user.tokenIdentifier))
+      .withIndex("by_inviter_user_id", (q) => q.eq("inviterUserId", me._id))
       .collect();
 
     // Update each invitation to be expired

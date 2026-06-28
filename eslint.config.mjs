@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
+import convexPlugin from "@convex-dev/eslint-plugin";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import { defineConfig } from "eslint/config";
@@ -29,5 +30,6 @@ export default defineConfig([
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...convexPlugin.configs.recommended,
   reactHooks.configs.flat.recommended,
 ]);
