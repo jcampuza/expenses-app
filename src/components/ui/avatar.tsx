@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import * as AvatarPrimitive from "@radix-ui/react-avatar";
+import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
 
 import { cn } from "@/lib/utils";
 
@@ -36,11 +36,16 @@ function AvatarImage({
 
 function AvatarFallback({
   className,
+  delay,
+  delayMs,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback> & {
+  delayMs?: React.ComponentProps<typeof AvatarPrimitive.Fallback>["delay"];
+}) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
+      delay={delay ?? delayMs}
       className={cn(
         "flex size-full items-center justify-center rounded-full bg-muted",
         className,

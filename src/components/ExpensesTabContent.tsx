@@ -36,6 +36,14 @@ import { AddExpenseForm } from "./AddExpenseForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonCard } from "@/components/Skeletons";
 
+const PAYER_FILTER_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "mine", label: "You paid" },
+  { value: "theirs", label: "They paid" },
+] as const;
+
+type PayerFilter = (typeof PAYER_FILTER_OPTIONS)[number]["value"];
+
 export function ConnectionExpenseList({
   connectionId,
 }: {
@@ -51,6 +59,7 @@ export function ConnectionExpenseList({
   );
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [payerFilter, setPayerFilter] = useState<PayerFilter>("all");
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,35 +76,74 @@ export function ConnectionExpenseList({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const payerFilteredItems = useMemo(() => {
+    const items = expensesQuery.data.items ?? [];
+
+    if (payerFilter === "mine") {
+      return items.filter((item) => item.expense.paidBy === me.data._id);
+    }
+
+    if (payerFilter === "theirs") {
+      return items.filter((item) => item.expense.paidBy !== me.data._id);
+    }
+
+    return items;
+  }, [expensesQuery.data.items, me.data._id, payerFilter]);
+
   const fuseSearch = useMemo(() => {
-    return new Fuse(expensesQuery.data.items ?? [], {
+    return new Fuse(payerFilteredItems, {
       keys: ["expense.name", "expense.category"],
       threshold: 0.3,
     });
-  }, [expensesQuery.data.items]);
+  }, [payerFilteredItems]);
 
   const searchItemsResponse = useMemo(() => {
     if (deferredSearchTerm) {
       return fuseSearch.search(deferredSearchTerm).map((item) => item.item);
     }
 
-    return expensesQuery.data.items ?? [];
-  }, [deferredSearchTerm, expensesQuery.data.items, fuseSearch]);
+    return payerFilteredItems;
+  }, [deferredSearchTerm, fuseSearch, payerFilteredItems]);
 
   return (
     <>
-      <div className="relative">
-        <Input
-          type="text"
-          ref={searchInputRef}
-          name="search"
-          value={searchTerm}
-          placeholder="Search..."
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <kbd className="pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:block">
-          /
-        </kbd>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Input
+            type="text"
+            ref={searchInputRef}
+            name="search"
+            value={searchTerm}
+            placeholder="Search..."
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <kbd className="pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:block">
+            /
+          </kbd>
+        </div>
+
+        <div className="grid grid-cols-3 rounded-md bg-muted p-1 text-muted-foreground sm:w-auto">
+          {PAYER_FILTER_OPTIONS.map((option) => {
+            const selected = payerFilter === option.value;
+
+            return (
+              <Button
+                key={option.value}
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-pressed={selected}
+                onClick={() => setPayerFilter(option.value)}
+                className={cn(
+                  "h-8 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
+                  selected && "bg-background text-foreground shadow-sm",
+                )}
+              >
+                {option.label}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       <Separator className="my-4" />
@@ -135,6 +183,12 @@ export function ConnectionExpenseList({
           );
         })}
       </div>
+
+      {searchItemsResponse.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+          No expenses match this view.
+        </div>
+      )}
 
       <div className="fixed right-6 bottom-6 z-50 md:hidden">
         <AddExpenseDialogButton connectionId={connectionId} variant="mobile" />
@@ -191,9 +245,7 @@ export function AddExpenseDialogButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <ExpenseDialogButton variant={variant} />
-      </DialogTrigger>
+      <DialogTrigger render={<ExpenseDialogButton variant={variant} />} />
 
       <DialogContent>
         <VisuallyHidden>
@@ -220,15 +272,17 @@ export function AddExpenseDialogButton({
           />
 
           <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-            </DialogClose>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+              }
+            />
             <Button
               type="submit"
               form="add-expense-form"
@@ -419,23 +473,26 @@ function EditExpenseDialogButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <div>
-          <ExpenseItem
-            name={name}
-            date={date}
-            updatedAt={updatedAt}
-            category={category}
-            currentUserId={currentUserId}
-            paidBy={paidBy}
-            splitEqually={splitEqually}
-            totalCost={totalCost}
-            originalCurrency={originalCurrency}
-            originalTotalCost={originalTotalCost}
-            balance={balance}
-          />
-        </div>
-      </DialogTrigger>
+      <DialogTrigger
+        nativeButton={false}
+        render={
+          <div>
+            <ExpenseItem
+              name={name}
+              date={date}
+              updatedAt={updatedAt}
+              category={category}
+              currentUserId={currentUserId}
+              paidBy={paidBy}
+              splitEqually={splitEqually}
+              totalCost={totalCost}
+              originalCurrency={originalCurrency}
+              originalTotalCost={originalTotalCost}
+              balance={balance}
+            />
+          </div>
+        }
+      />
 
       <DialogContent>
         <VisuallyHidden>
@@ -462,16 +519,18 @@ function EditExpenseDialogButton({
           />
 
           <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={actionIsInProgress}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-            </DialogClose>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={actionIsInProgress}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+              }
+            />
             <Button
               variant="destructive"
               type="button"

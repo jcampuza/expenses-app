@@ -28,7 +28,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
@@ -78,14 +77,19 @@ function SettingsPage() {
   return (
     <div className="container p-4">
       <div className="mb-6">
-        <Button asChild variant="ghost" className="hover:bg-transparent">
-          <AppLink
-            href="/dashboard"
-            className="inline-flex items-center text-primary"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </AppLink>
+        <Button
+          render={
+            <AppLink
+              href="/dashboard"
+              className="inline-flex items-center text-primary"
+            />
+          }
+          nativeButton={false}
+          variant="ghost"
+          className="hover:bg-transparent"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
         </Button>
       </div>
 
@@ -153,12 +157,14 @@ function ExpireInvitationsDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen: boolean) => setOpen(isOpen)}>
-      <DialogTrigger asChild>
-        <Button>
-          <Delete className="mr-2 h-4 w-4" />
-          Expire Invitations
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button>
+            <Delete className="mr-2 h-4 w-4" />
+            Expire Invitations
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Expire Invitations</DialogTitle>
@@ -234,15 +240,17 @@ function GenerateInvitationDialog() {
         }
       }}
     >
-      <DialogTrigger asChild>
-        <Button onClick={() => generateQRCode()} className="flex">
-          <QrCode className="mr-2 h-4 w-4" />
-          Generate Invitation QR Code
-          {state.status === "loading" || isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : null}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button onClick={() => generateQRCode()} className="flex">
+            <QrCode className="mr-2 h-4 w-4" />
+            Generate Invitation QR Code
+            {state.status === "loading" || isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-center">
@@ -374,6 +382,7 @@ function ConnectionActionsDropdown({
   userName: string;
 }) {
   const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { mutate: deleteConnection, isPending } = useConvexMutation(
     api.connections.deleteConnection,
@@ -399,49 +408,55 @@ function ConnectionActionsDropdown({
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <DropdownMenuItem onSelect={(e: Event) => e.preventDefault()}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Remove connection
-            </DropdownMenuItem>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove Connection</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to remove your connection with {userName}?
-                This action cannot be undone and will delete all shared expenses
-                between you and {userName}.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConnection}
-                disabled={isPending}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Removing...
-                  </>
-                ) : (
-                  "Remove Connection"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="sm">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => {
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Remove connection
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Connection</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove your connection with {userName}?
+              This action cannot be undone and will delete all shared expenses
+              between you and {userName}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConnection}
+              disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                "Remove Connection"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

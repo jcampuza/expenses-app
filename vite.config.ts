@@ -10,7 +10,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
-    port: 3000,
+    port: Number(process.env.PORT) || 3000,
   },
   plugins: [
     tailwindcss(),

@@ -1,3 +1,25 @@
+# Expenses App Agent Notes
+
+## Commands
+
+```bash
+bun install
+bun run dev          # web + convex together
+bun run dev:web      # Vite app only
+bun run dev:convex   # Convex functions only
+bun run test
+bun run lint
+bun run typecheck
+bun run check        # lint + typecheck + format check
+bun run build
+bun run start
+```
+
+## Directory
+
+- `convex/` - Convex api/dabatase
+- `src/` - Tanstack Router application
+
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.
