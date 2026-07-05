@@ -1,7 +1,5 @@
 # Expenses App Agent Notes
 
-Always use bun
-
 ## Commands
 
 ```bash
@@ -17,10 +15,10 @@ bun run build
 bun run start
 ```
 
-## Major libraries
+## Directory
 
-@tanstack/router
-convex
+- `convex/` - Convex api/dabatase
+- `src/` - Tanstack Router application
 
 <!-- convex-ai-start -->
 

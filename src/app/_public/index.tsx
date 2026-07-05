@@ -263,7 +263,7 @@ function PublicHome() {
             </p>
           </div>
 
-          <Accordion type="single" collapsible className="space-y-3">
+          <Accordion className="space-y-3">
             <AccordionItem value="privacy">
               <AccordionTrigger>Is my expense data private?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
