@@ -26,7 +26,7 @@
     "@tanstack/react-virtual": "^3.14.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.42.0",
+    "convex": "^1.42.3",
     "convex-helpers": "^0.1.120",
     "fuse.js": "^7.4.2",
     "lucide-react": "^1.21.0",
