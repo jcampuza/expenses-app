@@ -144,7 +144,7 @@ Set these environment variables (local and deployment):
 Build/Deploy:
 
 - Frontend builds run through `vite.config.ts`.
-- Cloudflare static hosting is configured in `wrangler.jsonc`.
+- The static build output in `dist/` is hosted on Vercel.
 
 ## Scripts & Local Development
 

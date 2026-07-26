@@ -7,7 +7,7 @@ ExpenseMate is a Vite + TanStack Router single-page app that uses Clerk for auth
 - Bun
 - A Clerk application
 - A Convex deployment
-- A Cloudflare account for production hosting
+- A Vercel account for hosting
 
 ## Commands
 
@@ -25,10 +25,6 @@ bun run test
 bun run build
 bun run build:staging
 bun run start
-bun run cf:preview
-bun run cf:preview:staging
-bun run cf:deploy
-bun run cf:deploy:staging
 ```
 
 ## Environment Variables
@@ -37,7 +33,7 @@ Copy `.env.example` to `.env.local` for local development and provide the requir
 
 ### Frontend build-time variables
 
-These values are embedded into the Vite build and must be present anywhere you run `bun run build`.
+These values are embedded into the Vite build and must be present anywhere you run `bun run build`, including in the Vercel project's environment variables.
 
 ```bash
 VITE_CLERK_PUBLISHABLE_KEY=
@@ -47,7 +43,7 @@ VITE_CONVEX_URL=
 
 ### Other variables
 
-These are not part of the Cloudflare static frontend deployment, but may still be used by other local workflows.
+These are not part of the static frontend deployment, but may still be used by other local workflows.
 
 ```bash
 CLERK_SECRET_KEY=
@@ -61,8 +57,6 @@ This repo uses Vite env modes for frontend deployment targets:
 
 - `bun run build` uses production values from `.env.production`
 - `bun run build:staging` uses staging values from `.env.staging`
-
-Cloudflare Wrangler environments are configured to mirror those targets, but the deployed frontend values still come from the Vite build step.
 
 ## Local Development
 
@@ -104,105 +98,29 @@ Preview the Vite production build locally:
 bun run start
 ```
 
-## Cloudflare Workers Static Assets
+## Deployment
 
-This app deploys to Cloudflare as a static SPA. Clerk and Convex remain external services.
+The app deploys to Vercel as a static SPA. Clerk and Convex remain external services.
 
-The Cloudflare config lives in `wrangler.jsonc` and is set up to:
+Deployments are managed entirely from the Vercel dashboard:
 
-- serve assets from `dist/`
-- return `index.html` for unknown navigation routes
-- support direct loads of TanStack Router routes like `/dashboard`
-- define separate production and staging Wrangler environments
-- expose non-secret runtime metadata via Wrangler `vars`
+- production deploys come from `main`
+- every other branch and pull request gets a Vercel preview deployment
+- build command is `bun run build`, output directory is `dist/`
+- SPA fallback is handled by Vercel's Vite framework preset, so direct loads of TanStack Router routes like `/dashboard` work
 
-### First-time setup
+Set `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_FRONTEND_API_URL`, and `VITE_CONVEX_URL` per environment in the Vercel project settings. Do not put `CLERK_SECRET_KEY` in the frontend build environment.
 
-Authenticate Wrangler:
-
-```bash
-bunx wrangler login
-```
-
-Verify the active account if needed:
-
-```bash
-bunx wrangler whoami
-```
-
-### Preview the Cloudflare deployment locally
-
-Production preview:
-
-```bash
-bun run cf:preview
-```
-
-Staging preview:
-
-```bash
-bun run cf:preview:staging
-```
-
-### Deploy to Cloudflare
-
-Production deploy:
-
-```bash
-bun run cf:deploy
-```
-
-Staging deploy:
-
-```bash
-bun run cf:deploy:staging
-```
-
-Start by validating the app on the generated `workers.dev` hostname before attaching a production custom domain.
-
-### Wrangler environments
-
-`wrangler.jsonc` defines:
-
-- the default environment for production
-- a `staging` environment override under `env.staging`
-- non-secret `vars` for deployment metadata and public frontend values
-
-Do not store secrets like `CLERK_SECRET_KEY` in Wrangler `vars`. Use Cloudflare secrets only if you later add a Worker script that actually needs them.
-
-### GitHub Actions deployment
-
-`.github/workflows/deploy-worker.yml` deploys:
-
-- `main` pushes to the default production Worker
-- all other branch pushes to the `staging` Wrangler environment
-- manual runs to either target via `workflow_dispatch`
-
-Configure these GitHub environment secrets in both `staging` and `production`:
-
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_API_TOKEN`
-
-Configure these GitHub environment variables in both `staging` and `production`:
-
-- `VITE_CLERK_FRONTEND_API_URL`
-- `VITE_CLERK_PUBLISHABLE_KEY`
-- `VITE_CONVEX_URL`
-
-The workflow selects the GitHub Environment automatically:
-
-- `main` uses the `production` environment
-- other branches use the `staging` environment
-- manual runs use the environment chosen in `workflow_dispatch`
+`.github/workflows/build.yml` runs lint, typecheck, format check, and build on pushes to `main` and pull requests. It does not deploy.
 
 ## Production Cutover Checklist
 
-Before switching traffic to Cloudflare, verify:
+Before switching traffic to a new deployment, verify:
 
 - `VITE_CLERK_PUBLISHABLE_KEY` points to the correct Clerk application
 - `VITE_CLERK_FRONTEND_API_URL` points to the correct Clerk frontend API/domain
 - `VITE_CONVEX_URL` points to the correct Convex production deployment
-- Clerk allows the Cloudflare hostname and final custom domain
+- Clerk allows the Vercel hostname and final custom domain
 - Clerk sign-in and redirect URLs include the deployed frontend origin
 - direct loads of `/`, `/dashboard`, `/dashboard/connection/:connectionId`, and `/settings` work
 - Convex queries, mutations, and realtime updates work from the deployed origin
@@ -210,5 +128,6 @@ Before switching traffic to Cloudflare, verify:
 ## Notes
 
 - This repository is a client-rendered TanStack Router app, not a TanStack Start app.
-- Cloudflare Workers are only being used for static asset hosting and SPA fallback in this phase.
-- No backend migration off Convex is included in this setup.
+- The Vercel deployment only serves static assets and the SPA fallback; all backend logic lives in Convex.
+</content>
+</invoke>
