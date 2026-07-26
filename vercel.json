@@ -1,4 +1,32 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "redirects": [
+    { "source": "/favicon.ico", "destination": "/icon.png", "permanent": true }
+  ],
+  "rewrites": [
+    {
+      "source": "/:path((?!.*\\.(?:php|phtml|asp|aspx|jsp|cgi|pl|sh|sql|bak|old|env|ini|yml|yaml|xml|toml|log|zip|tar|gz)$).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(icon.png|apple-icon.png|logo.webp)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ]
 }
