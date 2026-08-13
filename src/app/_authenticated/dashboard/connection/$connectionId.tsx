@@ -20,14 +20,17 @@ export const Route = createFileRoute(
   loader: async ({ context, params }) => {
     const connectionId = params.connectionId as Id<"user_connections">;
 
-    // Purposely not awaiting these queries so that if the route is loaded
-    // the route will still suspend and showing skeletons
+    // Purposely not awaiting so the route still suspends and shows skeletons
     void context.clients.queryClient.ensureQueryData(
       convexQuery(api.expenses.getSharedExpenses, { connectionId }),
     );
-
     void context.clients.queryClient.ensureQueryData(
       convexQuery(api.user.getCurrentUserAuthenticated, {}),
+    );
+
+    // Warm the add/edit form without blocking the route
+    void context.clients.queryClient.ensureQueryData(
+      convexQuery(api.exchangeRates.getSupportedCurrencies, {}),
     );
   },
   component: ConnectionPage,

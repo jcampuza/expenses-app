@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { useConvexMutation } from "@/hooks/use-convex-mutation";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { LoadingFormComponent } from "@/components/LoadingComponent";
 import {
@@ -166,6 +166,7 @@ export function ConnectionExpenseList({
             <EditExpenseDialogButton
               key={expenseItem.expense._id}
               currentUserId={me.data._id}
+              otherUserId={expensesQuery.data.user._id}
               connectionId={connectionId}
               id={expenseItem.expense._id}
               name={expenseItem.expense.name}
@@ -206,8 +207,6 @@ export function AddExpenseDialogButton({
 }) {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const me = useQuery(convexQuery(api.user.getCurrentUserAuthenticated, {}));
   const addExpenseMutation = useConvexMutation(api.expenses.addExpense, {
     onSuccess: () => {
       setOpen(false);
@@ -226,10 +225,6 @@ export function AddExpenseDialogButton({
     },
   ): Promise<void> => {
     e.preventDefault();
-
-    if (!me.data?._id) {
-      throw new Error("Tried to add expense while no user is logged in");
-    }
 
     await addExpenseMutation.mutate({
       connectionId: connectionId,
@@ -255,20 +250,10 @@ export function AddExpenseDialogButton({
         </VisuallyHidden>
 
         <Suspense fallback={<LoadingFormComponent />}>
-          <AddExpenseForm
-            id="add-expense-form"
-            initialValues={{
-              name: "",
-              category: CATEGORY.None,
-              totalCost: 0,
-              currency: "USD",
-              paidBy: me.data?._id ?? ("" as Id<"users">),
-              splitEqually: true,
-            }}
-            onSubmit={handleSubmit}
-            ref={formRef}
-            isNewExpense={true}
+          <ConnectionAddExpenseForm
             connectionId={connectionId}
+            onSubmit={handleSubmit}
+            formRef={formRef}
           />
 
           <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
@@ -296,6 +281,42 @@ export function AddExpenseDialogButton({
         </Suspense>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ConnectionAddExpenseForm({
+  connectionId,
+  onSubmit,
+  formRef,
+}: {
+  connectionId: Id<"user_connections">;
+  onSubmit: React.ComponentProps<typeof AddExpenseForm>["onSubmit"];
+  formRef: React.Ref<HTMLFormElement>;
+}) {
+  const me = useSuspenseQuery(
+    convexQuery(api.user.getCurrentUserAuthenticated, {}),
+  );
+  const expenses = useSuspenseQuery(
+    convexQuery(api.expenses.getSharedExpenses, { connectionId }),
+  );
+
+  return (
+    <AddExpenseForm
+      id="add-expense-form"
+      initialValues={{
+        name: "",
+        category: CATEGORY.None,
+        totalCost: 0,
+        currency: "USD",
+        paidBy: me.data._id,
+        splitEqually: true,
+      }}
+      onSubmit={onSubmit}
+      ref={formRef}
+      isNewExpense={true}
+      currentUserId={me.data._id}
+      otherUserId={expenses.data.user._id}
+    />
   );
 }
 
@@ -398,6 +419,7 @@ function getWhoPaidExpenseDetails(
 
 function EditExpenseDialogButton({
   currentUserId,
+  otherUserId,
   connectionId,
   id,
   name,
@@ -413,6 +435,7 @@ function EditExpenseDialogButton({
   splitEqually,
 }: {
   currentUserId: Id<"users">;
+  otherUserId: Id<"users">;
   connectionId: Id<"user_connections">;
   id: Id<"expenses">;
   name: string;
@@ -515,7 +538,8 @@ function EditExpenseDialogButton({
             }}
             onSubmit={handleSubmit}
             isNewExpense={false}
-            connectionId={connectionId}
+            currentUserId={currentUserId}
+            otherUserId={otherUserId}
           />
 
           <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">

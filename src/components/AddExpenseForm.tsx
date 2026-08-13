@@ -8,7 +8,6 @@ import { CATEGORIES, suggestCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
-import { SkeletonFormField } from "@/components/Skeletons";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 
@@ -19,7 +18,8 @@ export function AddExpenseForm({
   ref,
   isNewExpense = false,
   className,
-  connectionId,
+  currentUserId,
+  otherUserId,
 }: {
   initialValues: {
     name: string;
@@ -44,7 +44,8 @@ export function AddExpenseForm({
   ref?: React.Ref<HTMLFormElement>;
   isNewExpense?: boolean;
   className?: string;
-  connectionId: Id<"user_connections">;
+  currentUserId: Id<"users">;
+  otherUserId: Id<"users">;
 }) {
   const [isManualSelection, setIsManualSelection] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState(
@@ -54,15 +55,6 @@ export function AddExpenseForm({
     initialValues.totalCost === 0 ? "" : initialValues.totalCost.toString(),
   );
   const categorySelectRef = useRef<HTMLSelectElement>(null);
-
-  const me = useSuspenseQuery(
-    convexQuery(api.user.getCurrentUserAuthenticated, {}),
-  );
-  const connection = useSuspenseQuery(
-    convexQuery(api.connections.getConnectionById, {
-      id: connectionId,
-    }),
-  );
 
   const supportedCurrencies = useSuspenseQuery(
     convexQuery(api.exchangeRates.getSupportedCurrencies, {}),
@@ -157,25 +149,6 @@ export function AddExpenseForm({
     });
   };
 
-  const otherUser =
-    connection && me
-      ? connection.data?.inviterUserId === me.data?._id
-        ? { _id: connection.data?.inviteeUserId, name: "Other User" }
-        : { _id: connection.data?.inviterUserId, name: "Other User" }
-      : null;
-
-  if (!me || !otherUser) {
-    return (
-      <div className="space-y-4">
-        <SkeletonFormField />
-        <SkeletonFormField />
-        <SkeletonFormField />
-        <SkeletonFormField />
-        <SkeletonFormField />
-      </div>
-    );
-  }
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -230,7 +203,7 @@ export function AddExpenseForm({
           defaultValue={initialValues.currency}
           onChange={handleCurrencyChange}
         >
-          {supportedCurrencies.data?.map((currencyData) => (
+          {supportedCurrencies.data.map((currencyData) => (
             <option key={currencyData.currency} value={currencyData.currency}>
               {currencyData.currency}
             </option>
@@ -275,8 +248,8 @@ export function AddExpenseForm({
           required
           defaultValue={initialValues.paidBy}
         >
-          {me && <option value={me.data?._id}>You</option>}
-          {otherUser && <option value={otherUser._id}>Them</option>}
+          <option value={currentUserId}>You</option>
+          <option value={otherUserId}>Them</option>
         </Select>
       </div>
 
