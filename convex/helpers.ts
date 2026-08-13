@@ -1,3 +1,4 @@
+import { getUserExpenseRows } from "./queries";
 import { Id } from "./_generated/dataModel";
 import { QueryCtx } from "./_generated/server";
 
@@ -25,10 +26,7 @@ export const getExpensesByUserId = async (
   ctx: QueryCtx,
   userId: Id<"users">,
 ) => {
-  const userExpenses = await ctx.db
-    .query("user_expenses")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+  const userExpenses = await getUserExpenseRows(ctx, userId);
 
   const expenses = await Promise.all(
     userExpenses.map(async (ue) => {

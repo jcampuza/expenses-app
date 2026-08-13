@@ -10,10 +10,7 @@ export async function assertUsersConnection(
   convex: QueryCtx,
   { connectionId, userId }: CheckUsersConnectionArgs,
 ) {
-  const connection = await convex.db
-    .query("user_connections")
-    .withIndex("by_id", (q) => q.eq("_id", connectionId))
-    .first();
+  const connection = await convex.db.get("user_connections", connectionId);
 
   if (!connection) {
     throw new Error("Connection not found");
@@ -36,7 +33,7 @@ export async function getUsersConnections(
   const [invitedByMe, invitedMe] = await Promise.all([
     convex.db
       .query("user_connections")
-      .withIndex("by_inviter", (q) => q.eq("inviterUserId", userId))
+      .withIndex("by_inviter_and_invitee", (q) => q.eq("inviterUserId", userId))
       .collect(),
 
     convex.db
@@ -54,20 +51,59 @@ type GetUsersSharedExpensesArgs = {
   userIdB: Id<"users">;
 };
 
+export async function getUserExpenseRows(
+  convex: QueryCtx,
+  userId: Id<"users">,
+) {
+  return await convex.db
+    .query("user_expenses")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+}
+
+export function sharedBalanceFromExpenseRows(
+  userAExpenses: Doc<"user_expenses">[],
+  userBExpenseIds: ReadonlySet<Id<"expenses">>,
+) {
+  let totalBalance = 0;
+  for (const userExpense of userAExpenses) {
+    if (userBExpenseIds.has(userExpense.expenseId)) {
+      totalBalance += userExpense.amountPaid - userExpense.amountOwed;
+    }
+  }
+  return totalBalance;
+}
+
+export async function findConnectionBetweenUsers(
+  convex: QueryCtx,
+  userIdA: Id<"users">,
+  userIdB: Id<"users">,
+) {
+  const [forward, reverse] = await Promise.all([
+    convex.db
+      .query("user_connections")
+      .withIndex("by_inviter_and_invitee", (q) =>
+        q.eq("inviterUserId", userIdA).eq("inviteeUserId", userIdB),
+      )
+      .unique(),
+    convex.db
+      .query("user_connections")
+      .withIndex("by_inviter_and_invitee", (q) =>
+        q.eq("inviterUserId", userIdB).eq("inviteeUserId", userIdA),
+      )
+      .unique(),
+  ]);
+
+  return forward ?? reverse;
+}
+
 export async function getUsersSharedExpenses(
   convex: QueryCtx,
   { userIdA, userIdB }: GetUsersSharedExpensesArgs,
 ) {
-  // Get all user_expenses for both users
   const [userAExpenses, userBExpenses] = await Promise.all([
-    convex.db
-      .query("user_expenses")
-      .withIndex("by_user", (q) => q.eq("userId", userIdA))
-      .collect(),
-    convex.db
-      .query("user_expenses")
-      .withIndex("by_user", (q) => q.eq("userId", userIdB))
-      .collect(),
+    getUserExpenseRows(convex, userIdA),
+    getUserExpenseRows(convex, userIdB),
   ]);
 
   const userAExpenseMap = new Map(userAExpenses.map((e) => [e.expenseId, e]));

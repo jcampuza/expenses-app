@@ -49,7 +49,7 @@ export const persist = mutation({
 
         return {
           userId: user._id,
-          status: "no-change",
+          status: "updated",
         } as const;
       }
 
