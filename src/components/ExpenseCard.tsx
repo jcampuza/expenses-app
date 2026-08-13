@@ -77,7 +77,7 @@ export function ExpenseCardCompact({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-200 hover:shadow-md",
+        "relative overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow duration-75 hover:shadow-md",
         className,
       )}
     >
