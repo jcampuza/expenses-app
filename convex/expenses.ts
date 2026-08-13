@@ -63,7 +63,7 @@ export const getSharedExpenses = query({
     });
 
     return {
-      user: { name: otherUser.name },
+      user: { _id: otherUser._id, name: otherUser.name },
       totalBalance: sharedExpenses.totalBalance,
       items: sharedExpenses.items,
     };
