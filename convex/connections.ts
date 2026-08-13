@@ -19,10 +19,18 @@ export const getConnectionById = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    const me = await getMeDocument(ctx);
     const connection = await ctx.db.get("user_connections", args.id);
 
     if (!connection) {
       return null;
+    }
+
+    if (
+      connection.inviterUserId !== me._id &&
+      connection.inviteeUserId !== me._id
+    ) {
+      throw new Error("Unauthorized to view this connection");
     }
 
     return {
@@ -163,16 +171,19 @@ export const deleteConnection = mutation({
       otherExpenseRows.map((row) => [row.expenseId, row]),
     );
 
-    for (const myRow of myExpenseRows) {
+    const sharedExpenseDeletes = myExpenseRows.flatMap((myRow) => {
       const otherRow = otherExpenseById.get(myRow.expenseId);
       if (!otherRow) {
-        continue;
+        return [];
       }
 
-      await ctx.db.delete("user_expenses", myRow._id);
-      await ctx.db.delete("user_expenses", otherRow._id);
-      await ctx.db.delete("expenses", myRow.expenseId);
-    }
+      return [
+        ctx.db.delete("user_expenses", myRow._id),
+        ctx.db.delete("user_expenses", otherRow._id),
+        ctx.db.delete("expenses", myRow.expenseId),
+      ];
+    });
+    await Promise.all(sharedExpenseDeletes);
 
     // Finally, delete the connection
     await ctx.db.delete("user_connections", args.connectionId);

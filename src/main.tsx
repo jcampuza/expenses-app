@@ -11,6 +11,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 
 import "@/styles/globals.css";
 import { usePersistUserEffect } from "@/hooks/use-persist-user";
+import { DefaultRouteError } from "@/components/ErrorBoundary";
 
 const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
 const clients = getClients();
@@ -18,6 +19,11 @@ const router = createRouter({
   routeTree,
   context: { auth: undefined!, clients },
   defaultPreload: "intent",
+  defaultErrorComponent: ({ error }) => (
+    <DefaultRouteError
+      error={error instanceof Error ? error : new Error("Something went wrong")}
+    />
+  ),
 });
 
 declare module "@tanstack/react-router" {

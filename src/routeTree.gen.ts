@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './app/__root'
 import { Route as AuthenticatedRouteRouteImport } from './app/_authenticated/route'
 import { Route as PublicIndexRouteImport } from './app/_public/index'
+import { Route as InviteTokenRouteImport } from './app/invite/$token'
 import { Route as AuthenticatedSettingsRouteImport } from './app/_authenticated/settings'
 import { Route as AuthenticatedDashboardRouteRouteImport } from './app/_authenticated/dashboard/route'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './app/_authenticated/dashboard/index'
@@ -23,6 +24,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/_public/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -53,12 +59,14 @@ export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/dashboard/connection/$connectionId': typeof AuthenticatedDashboardConnectionConnectionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/dashboard/connection/$connectionId': typeof AuthenticatedDashboardConnectionConnectionIdRoute
 }
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/_public/': typeof PublicIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/dashboard/connection/$connectionId': typeof AuthenticatedDashboardConnectionConnectionIdRoute
@@ -77,15 +86,22 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/settings'
+    | '/invite/$token'
     | '/dashboard/'
     | '/dashboard/connection/$connectionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/dashboard' | '/dashboard/connection/$connectionId'
+  to:
+    | '/'
+    | '/settings'
+    | '/invite/$token'
+    | '/dashboard'
+    | '/dashboard/connection/$connectionId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/invite/$token'
     | '/_public/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/dashboard/connection/$connectionId'
@@ -93,6 +109,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  InviteTokenRoute: typeof InviteTokenRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
@@ -110,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
@@ -176,6 +200,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  InviteTokenRoute: InviteTokenRoute,
   PublicIndexRoute: PublicIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -205,18 +205,25 @@ function GenerateInvitationDialog() {
     try {
       const dataFromMutation = await getInvitationLink();
 
-      if (dataFromMutation) {
-        const invitationLink = dataFromMutation.invitationLink;
-        const { renderSVG } = await import("uqr");
-        const svg = renderSVG(`${window.location.host}${invitationLink}`);
-        setState({
-          status: "ready",
-          data: svg,
-          invitationLink: `${window.location.host}${invitationLink}`,
-        });
-      } else {
+      if (!dataFromMutation) {
         setState({ status: "idle", data: null, invitationLink: null });
+        toast({
+          title: "Error",
+          description:
+            "Could not generate an invitation link. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      const invitationLink = `${window.location.origin}${dataFromMutation.invitationLink}`;
+      const { renderSVG } = await import("uqr");
+      const svg = renderSVG(invitationLink);
+      setState({
+        status: "ready",
+        data: svg,
+        invitationLink,
+      });
     } catch (error) {
       setState({ status: "idle", data: null, invitationLink: null });
       toast({
@@ -388,6 +395,7 @@ function ConnectionActionsDropdown({
     api.connections.deleteConnection,
     {
       onSuccess: () => {
+        setDeleteDialogOpen(false);
         toast({
           title: "Connection Removed",
           description: `Connection with ${userName} has been removed.`,
@@ -412,7 +420,11 @@ function ConnectionActionsDropdown({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Actions for ${userName}`}
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           }

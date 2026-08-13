@@ -125,14 +125,14 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     return (
       <Input
         type="text"
-        inputMode={inputMode || mode}
-        pattern={pattern || inputPattern}
         autoComplete="off"
         ref={ref}
-        value={value}
+        {...props}
+        inputMode={inputMode || mode}
+        pattern={pattern || inputPattern}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        {...props}
+        {...(value !== undefined ? { value } : {})}
       />
     );
   },

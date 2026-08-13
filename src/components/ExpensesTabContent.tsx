@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { useConvexMutation } from "@/hooks/use-convex-mutation";
+import { useToast } from "@/hooks/use-toast";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { LoadingFormComponent } from "@/components/LoadingComponent";
@@ -66,10 +67,22 @@ export function ConnectionExpenseList({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const isSlash = e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey;
-      if (isSlash) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
+      if (!isSlash) {
+        return;
       }
+
+      const target = e.target;
+      if (
+        target instanceof HTMLElement &&
+        target.closest(
+          "input, textarea, select, [contenteditable='true'], [role='dialog']",
+        )
+      ) {
+        return;
+      }
+
+      e.preventDefault();
+      searchInputRef.current?.focus();
     };
 
     window.addEventListener("keydown", onKey);
@@ -115,6 +128,7 @@ export function ConnectionExpenseList({
             name="search"
             value={searchTerm}
             placeholder="Search..."
+            aria-label="Search expenses"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <kbd className="pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:block">
@@ -135,7 +149,7 @@ export function ConnectionExpenseList({
                 aria-pressed={selected}
                 onClick={() => setPayerFilter(option.value)}
                 className={cn(
-                  "h-8 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
+                  "h-11 min-h-11 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
                   selected && "bg-background text-foreground shadow-sm",
                 )}
               >
@@ -186,7 +200,10 @@ export function ConnectionExpenseList({
       </div>
 
       {searchItemsResponse.length === 0 && (
-        <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <div
+          role="status"
+          className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground"
+        >
           No expenses match this view.
         </div>
       )}
@@ -207,9 +224,17 @@ export function AddExpenseDialogButton({
 }) {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const { toast } = useToast();
   const addExpenseMutation = useConvexMutation(api.expenses.addExpense, {
     onSuccess: () => {
       setOpen(false);
+    },
+    onError: (message) => {
+      toast({
+        title: "Couldn't add expense",
+        description: message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -275,7 +300,7 @@ export function AddExpenseDialogButton({
               variant="default"
               className="w-full sm:w-auto"
             >
-              {addExpenseMutation.isPending ? "Submitting..." : "Submit"}
+              {addExpenseMutation.isPending ? "Submitting..." : "Add expense"}
             </Button>
           </div>
         </Suspense>
@@ -324,11 +349,11 @@ function ExpenseDialogButton({
   variant,
   ...rest
 }: React.ComponentProps<"button"> & { variant: "desktop" | "mobile" }) {
-  const { scrollDirection } = useScrollDirection();
+  const { scrollDirection, isAtTop } = useScrollDirection();
   const showText =
     scrollDirection === "IDLE" ||
     scrollDirection === "UP" ||
-    (scrollDirection === "DOWN" && window.scrollY === 0);
+    (scrollDirection === "DOWN" && isAtTop);
 
   return variant === "desktop" ? (
     <Button {...rest}>Add Expense</Button>
@@ -336,7 +361,7 @@ function ExpenseDialogButton({
     <Button
       {...rest}
       className={cn(
-        "h-12 rounded-full shadow-lg transition-all duration-75 ease-out hover:shadow-xl",
+        "h-12 rounded-full shadow-lg transition-[width,padding,box-shadow] duration-75 ease-out hover:shadow-xl motion-reduce:transition-none",
         showText ? "w-36 px-4" : "w-12 px-0",
       )}
     >
@@ -344,7 +369,7 @@ function ExpenseDialogButton({
         <Plus className="h-6 w-6 shrink-0" />
         <span
           className={cn(
-            "overflow-hidden whitespace-nowrap transition-all duration-75 ease-in-out",
+            "overflow-hidden whitespace-nowrap transition-[max-width,margin,opacity] duration-75 ease-in-out motion-reduce:transition-none",
             showText
               ? "ml-2 max-w-[200px] opacity-100"
               : "ml-0 max-w-0 opacity-0",
@@ -417,23 +442,7 @@ function getWhoPaidExpenseDetails(
   };
 }
 
-function EditExpenseDialogButton({
-  currentUserId,
-  otherUserId,
-  connectionId,
-  id,
-  name,
-  date,
-  updatedAt,
-  category,
-  totalCost,
-  currency,
-  originalCurrency,
-  originalTotalCost,
-  balance,
-  paidBy,
-  splitEqually,
-}: {
+type EditExpenseDialogButtonProps = {
   currentUserId: Id<"users">;
   otherUserId: Id<"users">;
   connectionId: Id<"user_connections">;
@@ -449,14 +458,80 @@ function EditExpenseDialogButton({
   balance: number;
   paidBy: Id<"users">;
   splitEqually: boolean;
-}) {
+};
+
+function EditExpenseDialogButton(props: EditExpenseDialogButtonProps) {
   const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="w-full text-left"
+        onClick={() => setOpen(true)}
+      >
+        <ExpenseItem
+          name={props.name}
+          date={props.date}
+          updatedAt={props.updatedAt}
+          category={props.category}
+          currentUserId={props.currentUserId}
+          paidBy={props.paidBy}
+          splitEqually={props.splitEqually}
+          totalCost={props.totalCost}
+          originalCurrency={props.originalCurrency}
+          originalTotalCost={props.originalTotalCost}
+          balance={props.balance}
+        />
+      </button>
+      {open ? (
+        <EditExpenseDialog {...props} open={open} onOpenChange={setOpen} />
+      ) : null}
+    </>
+  );
+}
+
+function EditExpenseDialog({
+  currentUserId,
+  otherUserId,
+  connectionId,
+  id,
+  name,
+  category,
+  totalCost,
+  currency,
+  originalCurrency,
+  originalTotalCost,
+  paidBy,
+  splitEqually,
+  open,
+  onOpenChange,
+}: EditExpenseDialogButtonProps & {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const formId = `edit-expense-form-${id}`;
   const updateExpenseMutation = useConvexMutation(api.expenses.updateExpense, {
-    onSuccess: () => setOpen(false),
+    onSuccess: () => onOpenChange(false),
+    onError: (message) => {
+      toast({
+        title: "Couldn't save expense",
+        description: message,
+        variant: "destructive",
+      });
+    },
   });
   const deleteExpenseMutation = useConvexMutation(api.expenses.deleteExpense, {
-    onSuccess: () => setOpen(false),
+    onSuccess: () => onOpenChange(false),
+    onError: (message) => {
+      toast({
+        title: "Couldn't delete expense",
+        description: message,
+        variant: "destructive",
+      });
+    },
   });
 
   const handleDelete = () => {
@@ -495,28 +570,7 @@ function EditExpenseDialogButton({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        nativeButton={false}
-        render={
-          <div>
-            <ExpenseItem
-              name={name}
-              date={date}
-              updatedAt={updatedAt}
-              category={category}
-              currentUserId={currentUserId}
-              paidBy={paidBy}
-              splitEqually={splitEqually}
-              totalCost={totalCost}
-              originalCurrency={originalCurrency}
-              originalTotalCost={originalTotalCost}
-              balance={balance}
-            />
-          </div>
-        }
-      />
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <VisuallyHidden>
           <DialogHeader>
@@ -526,7 +580,7 @@ function EditExpenseDialogButton({
 
         <Suspense fallback={<LoadingFormComponent />}>
           <AddExpenseForm
-            id="edit-expense-form"
+            id={formId}
             ref={formRef}
             initialValues={{
               name: name,
@@ -566,7 +620,7 @@ function EditExpenseDialogButton({
             </Button>
             <Button
               type="submit"
-              form="edit-expense-form"
+              form={formId}
               disabled={actionIsInProgress}
               className="w-full sm:w-auto"
             >

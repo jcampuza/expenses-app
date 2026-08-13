@@ -1,7 +1,35 @@
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  MutationCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { getMeDocument } from "./helpers";
 import { findConnectionBetweenUsers } from "./queries";
+
+function generateInvitationToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
+}
+
+async function generateUniqueInvitationToken(ctx: MutationCtx) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const token = generateInvitationToken();
+    const existing = await ctx.db
+      .query("invitations")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .unique();
+    if (!existing) {
+      return token;
+    }
+  }
+
+  throw new Error("Failed to generate a unique invitation token");
+}
 
 // Get an invitation link for a user
 export const getInvitationLink = mutation({
@@ -16,8 +44,7 @@ export const getInvitationLink = mutation({
       throw new Error("Inviter not found");
     }
 
-    // Generate a unique token
-    const token = Math.random().toString(36).substring(2);
+    const token = await generateUniqueInvitationToken(ctx);
     const expirationTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
     // Store the invitation in the database
@@ -50,15 +77,17 @@ export const expireAllInvitations = mutation({
 
     const now = Date.now();
     const epochIso = new Date(0).toISOString();
-    for (const invitation of invitations) {
-      if (new Date(invitation.expirationTime).getTime() <= now) {
-        continue;
-      }
-
-      await ctx.db.patch("invitations", invitation._id, {
-        expirationTime: epochIso,
-      });
-    }
+    await Promise.all(
+      invitations
+        .filter(
+          (invitation) => new Date(invitation.expirationTime).getTime() > now,
+        )
+        .map((invitation) =>
+          ctx.db.patch("invitations", invitation._id, {
+            expirationTime: epochIso,
+          }),
+        ),
+    );
 
     return null;
   },
@@ -211,11 +240,13 @@ export const deleteExpiredInvitations = internalMutation({
       )
       .collect();
 
-    for (const invitation of invitations) {
-      const expirationTime = new Date(invitation.expirationTime).getTime();
-      if (expirationTime < Date.now()) {
-        await ctx.db.delete("invitations", invitation._id);
-      }
-    }
+    const now = Date.now();
+    await Promise.all(
+      invitations
+        .filter(
+          (invitation) => new Date(invitation.expirationTime).getTime() < now,
+        )
+        .map((invitation) => ctx.db.delete("invitations", invitation._id)),
+    );
   },
 });
