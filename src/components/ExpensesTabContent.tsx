@@ -245,7 +245,7 @@ export function AddExpenseDialogButton({
       <DialogContent>
         <VisuallyHidden>
           <DialogHeader>
-            <DialogTitle>Add Expense</DialogTitle>´
+            <DialogTitle>Add Expense</DialogTitle>
           </DialogHeader>
         </VisuallyHidden>
 
@@ -336,7 +336,7 @@ function ExpenseDialogButton({
     <Button
       {...rest}
       className={cn(
-        "h-12 rounded-full shadow-lg transition-all duration-200 ease-out hover:shadow-xl",
+        "h-12 rounded-full shadow-lg transition-all duration-75 ease-out hover:shadow-xl",
         showText ? "w-36 px-4" : "w-12 px-0",
       )}
     >
@@ -344,7 +344,7 @@ function ExpenseDialogButton({
         <Plus className="h-6 w-6 shrink-0" />
         <span
           className={cn(
-            "overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out",
+            "overflow-hidden whitespace-nowrap transition-all duration-75 ease-in-out",
             showText
               ? "ml-2 max-w-[200px] opacity-100"
               : "ml-0 max-w-0 opacity-0",

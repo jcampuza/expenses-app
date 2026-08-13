@@ -21,7 +21,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Backdrop
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0",
+      "fixed inset-0 z-50 bg-black/80 transition-opacity duration-75 data-ending-style:opacity-0 motion-reduce:transition-none",
       className,
     )}
     {...props}
@@ -38,11 +38,11 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Popup
       ref={ref}
       className={cn(
-        "fixed z-50 grid w-full gap-4 border bg-background shadow-lg transition-[opacity,transform] duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0",
+        "fixed z-50 grid w-full gap-4 border bg-background shadow-lg transition-opacity duration-75 data-ending-style:opacity-0 motion-reduce:transition-none",
         // Mobile: Full screen with scrolling
         "inset-0 h-full max-h-screen rounded-none p-4",
         // Desktop: Centered with max width and no scrolling
-        "sm:top-[50%] sm:left-[50%] sm:h-fit sm:max-h-[85vh] sm:w-full sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-6 sm:data-ending-style:scale-95 sm:data-ending-style:translate-x-[-50%] sm:data-ending-style:translate-y-[-48%] sm:data-starting-style:scale-95 sm:data-starting-style:translate-x-[-50%] sm:data-starting-style:translate-y-[-48%]",
+        "sm:top-[50%] sm:left-[50%] sm:h-fit sm:max-h-[85vh] sm:w-full sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-6",
         className,
       )}
       {...props}
