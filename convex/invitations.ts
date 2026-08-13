@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getMeDocument } from "./helpers";
+import { findConnectionBetweenUsers } from "./queries";
 
 // Get an invitation link for a user
 export const getInvitationLink = mutation({
@@ -47,10 +48,15 @@ export const expireAllInvitations = mutation({
       .withIndex("by_inviter_user_id", (q) => q.eq("inviterUserId", me._id))
       .collect();
 
-    // Update each invitation to be expired
+    const now = Date.now();
+    const epochIso = new Date(0).toISOString();
     for (const invitation of invitations) {
+      if (new Date(invitation.expirationTime).getTime() <= now) {
+        continue;
+      }
+
       await ctx.db.patch("invitations", invitation._id, {
-        expirationTime: new Date(0).toISOString(), // Set to epoch time to expire
+        expirationTime: epochIso,
       });
     }
 
@@ -101,13 +107,11 @@ export const getInvitation = query({
       throw new Error("Inviter not found");
     }
 
-    // Check if the users are already connected
-    const connection = await ctx.db
-      .query("user_connections")
-      .withIndex("by_inviter_and_invitee", (q) =>
-        q.eq("inviterUserId", inviter._id).eq("inviteeUserId", me._id),
-      )
-      .unique();
+    const connection = await findConnectionBetweenUsers(
+      ctx,
+      inviter._id,
+      me._id,
+    );
 
     if (connection) {
       throw new Error("You are already connected to this user");
@@ -166,6 +170,16 @@ export const acceptInvitation = mutation({
     // Check if the invitation is for the current user
     if (inviter._id === me._id) {
       throw new Error("You cannot accept your own invitation");
+    }
+
+    const existingConnection = await findConnectionBetweenUsers(
+      ctx,
+      inviter._id,
+      me._id,
+    );
+
+    if (existingConnection) {
+      throw new Error("You are already connected to this user");
     }
 
     // Mark the invitation as used

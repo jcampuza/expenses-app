@@ -72,13 +72,29 @@ export const storeExchangeRates = internalMutation({
     const { rates } = args;
 
     await Promise.all(
-      rates.map((rate) =>
-        ctx.db.insert("exchange_rates", {
+      rates.map(async (rate) => {
+        const existing = await ctx.db
+          .query("exchange_rates")
+          .withIndex("by_currency_and_date", (q) =>
+            q.eq("currency", rate.currency).eq("date", rate.date),
+          )
+          .first();
+
+        if (existing) {
+          if (existing.rate !== rate.rate) {
+            await ctx.db.patch("exchange_rates", existing._id, {
+              rate: rate.rate,
+            });
+          }
+          return;
+        }
+
+        await ctx.db.insert("exchange_rates", {
           currency: rate.currency,
           rate: rate.rate,
           date: rate.date,
-        }),
-      ),
+        });
+      }),
     );
 
     console.info("storeExchangeRates success");
@@ -122,7 +138,7 @@ export const getLatestExchangeRate = query({
   handler: async (ctx, { currency }) => {
     // USD is the base currency, so it's always 1
     if (currency === "USD") {
-      return { currency, rate: 1, date: new Date().toISOString() };
+      return { currency, rate: 1, date: "1970-01-01" };
     }
 
     return await ctx.db
@@ -164,7 +180,11 @@ export const getSupportedCurrencies = query({
       .sort((a, b) => a.currency.localeCompare(b.currency));
 
     return [
-      { currency: "USD", rate: 1, date: new Date().toISOString() },
+      {
+        currency: "USD",
+        rate: 1,
+        date: availableCurrencies[0]?.date ?? "1970-01-01",
+      },
       ...availableCurrencies,
     ];
   },

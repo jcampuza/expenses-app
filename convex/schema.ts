@@ -21,9 +21,7 @@ export default defineSchema({
     currency: v.string(),
     rate: v.number(),
     date: v.string(),
-  })
-    .index("by_currency_and_date", ["currency", "date"])
-    .index("by_date", ["date"]),
+  }).index("by_currency_and_date", ["currency", "date"]),
 
   user_expenses: defineTable({
     userId: v.id("users"),
@@ -40,8 +38,7 @@ export default defineSchema({
     acceptedAt: v.string(), // ISO string
   })
     .index("by_inviter_and_invitee", ["inviterUserId", "inviteeUserId"])
-    .index("by_invitee", ["inviteeUserId"])
-    .index("by_inviter", ["inviterUserId"]),
+    .index("by_invitee", ["inviteeUserId"]),
 
   invitations: defineTable({
     token: v.string(), // primary key in drizzle, but Convex uses _id

@@ -7,7 +7,6 @@ crons.daily(
   "delete-expired-invitations",
   {
     hourUTC: 6,
-    minuteUTC: 0,
   },
   internal.invitations.deleteExpiredInvitations,
 );
@@ -16,7 +15,6 @@ crons.daily(
   "fetch-exchange-rates",
   {
     hourUTC: 6,
-    minuteUTC: 0,
   },
   internal.exchangeRates.fetchAndStoreExchangeRates,
 );

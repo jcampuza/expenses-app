@@ -1,6 +1,10 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { getUsersConnections, getUsersSharedExpenses } from "./queries";
+import {
+  getUserExpenseRows,
+  getUsersConnections,
+  sharedBalanceFromExpenseRows,
+} from "./queries";
 import { getMeDocument } from "./helpers";
 
 export const getConnectionById = query({
@@ -50,6 +54,8 @@ export const getConnectedUsers = query({
       return [];
     }
 
+    const myExpenseRows = await getUserExpenseRows(ctx, me._id);
+
     const result = await Promise.all(
       connections.map(async (connection) => {
         const otherUserId =
@@ -57,18 +63,19 @@ export const getConnectedUsers = query({
             ? connection.inviterUserId
             : connection.inviteeUserId;
 
-        const sharedExpenses = await getUsersSharedExpenses(ctx, {
-          userIdA: me._id,
-          userIdB: otherUserId,
-        });
-
-        const otherUser = await ctx.db.get("users", otherUserId);
+        const [otherExpenseRows, otherUser] = await Promise.all([
+          getUserExpenseRows(ctx, otherUserId),
+          ctx.db.get("users", otherUserId),
+        ]);
 
         return {
           connectionId: connection._id,
           userId: otherUserId,
           name: otherUser?.name ?? "They",
-          totalBalance: sharedExpenses.totalBalance,
+          totalBalance: sharedBalanceFromExpenseRows(
+            myExpenseRows,
+            new Set(otherExpenseRows.map((row) => row.expenseId)),
+          ),
         };
       }),
     );
@@ -148,21 +155,23 @@ export const deleteConnection = mutation({
         ? connection.inviteeUserId
         : connection.inviterUserId;
 
-    // Get all shared expenses between the two users
-    const sharedExpenses = await getUsersSharedExpenses(ctx, {
-      userIdA: me._id,
-      userIdB: otherUserId,
-    });
+    const [myExpenseRows, otherExpenseRows] = await Promise.all([
+      getUserExpenseRows(ctx, me._id),
+      getUserExpenseRows(ctx, otherUserId),
+    ]);
+    const otherExpenseById = new Map(
+      otherExpenseRows.map((row) => [row.expenseId, row]),
+    );
 
-    // Delete all user_expenses entries for shared expenses
-    for (const item of sharedExpenses.items) {
-      await ctx.db.delete("user_expenses", item.userAExpense._id);
-      await ctx.db.delete("user_expenses", item.userBExpense._id);
-    }
+    for (const myRow of myExpenseRows) {
+      const otherRow = otherExpenseById.get(myRow.expenseId);
+      if (!otherRow) {
+        continue;
+      }
 
-    // Delete all shared expenses
-    for (const item of sharedExpenses.items) {
-      await ctx.db.delete("expenses", item.expense._id);
+      await ctx.db.delete("user_expenses", myRow._id);
+      await ctx.db.delete("user_expenses", otherRow._id);
+      await ctx.db.delete("expenses", myRow.expenseId);
     }
 
     // Finally, delete the connection
