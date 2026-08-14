@@ -33,7 +33,11 @@ export function CustomUserButton() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Button
+            variant="ghost"
+            className="relative size-11 rounded-full"
+            aria-label="Account menu"
+          >
             <Avatar className="h-8 w-8">
               <AvatarImage src={user.imageUrl} alt={user.fullName || "User"} />
               <AvatarFallback>

@@ -47,7 +47,7 @@ export function AddExpenseForm({
   currentUserId: Id<"users">;
   otherUserId: Id<"users">;
 }) {
-  const [isManualSelection, setIsManualSelection] = useState(false);
+  const isManualSelection = useRef(false);
   const [selectedCurrency, setSelectedCurrency] = useState(
     initialValues.currency,
   );
@@ -70,7 +70,9 @@ export function AddExpenseForm({
     if (isNewExpense && categorySelectRef.current && newName.length >= 3) {
       const currentCategory = categorySelectRef.current.value;
       const shouldSuggest =
-        !isManualSelection || currentCategory === "None" || !currentCategory;
+        !isManualSelection.current ||
+        currentCategory === "None" ||
+        !currentCategory;
 
       if (shouldSuggest) {
         const suggestedCategory = suggestCategory(newName);
@@ -84,9 +86,9 @@ export function AddExpenseForm({
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCategory = e.target.value;
     if (selectedCategory === "None" || !selectedCategory) {
-      setIsManualSelection(false);
+      isManualSelection.current = false;
     } else {
-      setIsManualSelection(true);
+      isManualSelection.current = true;
     }
   };
 

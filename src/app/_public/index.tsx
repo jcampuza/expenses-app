@@ -6,7 +6,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -70,10 +70,14 @@ function PublicHome() {
               <SignInButton mode="modal">
                 <Button size="lg">Get started free</Button>
               </SignInButton>
-              <a href="#features" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full">
-                  Learn more
-                </Button>
+              <a
+                href="#features"
+                className={
+                  buttonVariants({ variant: "outline", size: "lg" }) +
+                  " w-full sm:w-auto"
+                }
+              >
+                Explore features
               </a>
             </div>
 
@@ -311,10 +315,11 @@ function PublicHome() {
             <SignInButton mode="modal">
               <Button size="lg">Start now</Button>
             </SignInButton>
-            <a href="#features">
-              <Button variant="outline" size="lg">
-                Explore features
-              </Button>
+            <a
+              href="#features"
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              Explore features
             </a>
           </div>
         </section>

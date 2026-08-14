@@ -98,7 +98,7 @@ export function ExpenseCardCompact({
                 <Calendar className="mr-1 h-3 w-3" />
                 {date}
                 {updatedAt && (
-                  <span className="ml-2 text-[10px] text-muted-foreground/70 italic">
+                  <span className="ml-2 text-xs text-muted-foreground italic">
                     Edited {new Date(updatedAt).toLocaleDateString()}
                   </span>
                 )}

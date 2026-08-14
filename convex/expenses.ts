@@ -154,6 +154,10 @@ export const addExpense = mutation({
       me._id,
     );
 
+    if (args.paidBy !== me._id && args.paidBy !== otherUserId) {
+      throw new Error("Payer must be a participant in this connection");
+    }
+
     // Determine payer and non-payer
     const payerId = args.paidBy;
     const nonPayerId = payerId === me._id ? otherUserId : me._id;
@@ -260,6 +264,29 @@ export const updateExpense = mutation({
       throw new Error("Expense not found");
     }
 
+    const existingUserExpenses = await ctx.db
+      .query("user_expenses")
+      .withIndex("by_expense", (q) => q.eq("expenseId", id))
+      .collect();
+
+    const participantIds = [connection.inviterUserId, connection.inviteeUserId];
+    const expenseUserIds = new Set(
+      existingUserExpenses.map((userExpense) => userExpense.userId),
+    );
+
+    if (
+      existingUserExpenses.length !== 2 ||
+      !participantIds.every((participantId) =>
+        expenseUserIds.has(participantId),
+      )
+    ) {
+      throw new Error("Expense does not belong to this connection");
+    }
+
+    if (!participantIds.includes(args.paidBy)) {
+      throw new Error("Payer must be a participant in this connection");
+    }
+
     // Handle currency conversion for updates
     let finalTotalCost = args.totalCost ?? existingExpense.totalCost;
     let updateData: Omit<Doc<"expenses">, "_id" | "_creationTime"> = {
@@ -318,32 +345,23 @@ export const updateExpense = mutation({
       throw new Error("Failed to get updated expense");
     }
 
-    // Get existing user_expenses for this expense
-    const existingUserExpenses = await ctx.db
-      .query("user_expenses")
-      .withIndex("by_expense", (q) => q.eq("expenseId", id))
-      .collect();
-
     const payerId = args.paidBy;
     const totalCost = finalTotalCost; // Use the converted USD amount
     const splitEqually = args.splitEqually;
 
-    // Update existing user_expenses records
-    for (const userExpense of existingUserExpenses) {
-      if (userExpense.userId === payerId) {
-        // Update the payer's record
-        await ctx.db.patch("user_expenses", userExpense._id, {
-          amountPaid: totalCost,
-          amountOwed: splitEqually ? totalCost / 2 : 0,
-        });
-      } else {
-        // Update the non-payer's record
-        await ctx.db.patch("user_expenses", userExpense._id, {
-          amountPaid: 0,
-          amountOwed: splitEqually ? totalCost / 2 : totalCost,
-        });
-      }
-    }
+    await Promise.all(
+      existingUserExpenses.map((userExpense) =>
+        ctx.db.patch(
+          "user_expenses",
+          userExpense._id,
+          calculateExpenseAmounts(
+            totalCost,
+            splitEqually,
+            userExpense.userId === payerId,
+          ),
+        ),
+      ),
+    );
 
     return { expense: updatedExpense };
   },
@@ -372,11 +390,10 @@ export const deleteExpense = mutation({
       throw new Error("You are not a participant in this expense.");
     }
 
-    for (const ue of userExpenses) {
-      await ctx.db.delete("user_expenses", ue._id);
-    }
-
-    await ctx.db.delete("expenses", args.id);
+    await Promise.all([
+      ...userExpenses.map((ue) => ctx.db.delete("user_expenses", ue._id)),
+      ctx.db.delete("expenses", args.id),
+    ]);
 
     return { success: true };
   },

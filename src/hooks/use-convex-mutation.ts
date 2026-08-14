@@ -1,6 +1,6 @@
 import { useMutation } from "convex/react";
 import { FunctionReference, OptionalRestArgs } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type UseConvexMutationOptions<
   Mutation extends FunctionReference<"mutation", "public">,
@@ -24,6 +24,7 @@ export const useConvexMutation = <
   const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pendingCountRef = useRef(0);
 
   const mutationFn = useMutation(mutation);
 
@@ -32,6 +33,7 @@ export const useConvexMutation = <
       ? []
       : [Mutation["_args"]]
   ): Promise<Mutation["_returnType"] | null> => {
+    pendingCountRef.current += 1;
     setIsPending(true);
     setIsSuccess(false);
     setError(null);
@@ -40,19 +42,23 @@ export const useConvexMutation = <
       const result = await mutationFn(
         ...(args as OptionalRestArgs<Mutation["_args"]>),
       );
+      pendingCountRef.current -= 1;
+      if (pendingCountRef.current === 0) {
+        setIsPending(false);
+      }
       setIsSuccess(true);
       options?.onSuccess?.(result);
       return result;
     } catch (err) {
+      pendingCountRef.current -= 1;
+      if (pendingCountRef.current === 0) {
+        setIsPending(false);
+      }
       const errorMessage =
         err instanceof Error ? err.message : "An unknown error occurred";
       setError(errorMessage);
       options?.onError?.(errorMessage);
-      // We return null on error to provide a consistent return type.
-      // The error state should be checked to handle failures.
       return null;
-    } finally {
-      setIsPending(false);
     }
   };
 

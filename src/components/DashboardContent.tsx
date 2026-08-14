@@ -4,10 +4,10 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { formatDollars } from "@/lib/utils";
+import { formatDollars, cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardSummary() {
@@ -59,10 +59,14 @@ export function DashboardHeader() {
           Overview of your connections and recent activity
         </p>
       </div>
-      <Link to="/settings">
-        <Button size="sm" className="gap-2">
-          <Plus className="h-4 w-4" /> Invite a friend
-        </Button>
+      <Link
+        to="/settings"
+        className={cn(
+          buttonVariants({ variant: "default", size: "sm" }),
+          "gap-2",
+        )}
+      >
+        <Plus className="h-4 w-4" /> Invite a friend
       </Link>
     </div>
   );

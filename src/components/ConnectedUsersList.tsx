@@ -66,7 +66,7 @@ export const ConnectionListItem = ({
       <Link
         to="/dashboard/connection/$connectionId"
         params={{ connectionId }}
-        className="block transform rounded-lg border border-border bg-card p-4 shadow-sm transition-all hover:scale-[1.01] hover:shadow-md"
+        className="block transform rounded-lg border border-border bg-card p-4 shadow-sm transition-[transform,box-shadow] hover:scale-[1.01] hover:shadow-md motion-reduce:transition-none motion-reduce:hover:scale-100"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
