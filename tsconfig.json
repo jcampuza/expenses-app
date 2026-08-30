@@ -11,7 +11,8 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
     "incremental": true,
     "types": ["vite/client", "bun-types"],
     "paths": {
@@ -26,8 +27,7 @@
     "vite.config.ts",
     "postcss.config.*",
     "tailwind.config.*",
-    "eslint.config.mjs",
-    "src/routeTree.gen.ts"
+    "eslint.config.mjs"
   ],
-  "exclude": ["node_modules", ".next", ".output"]
+  "exclude": ["node_modules", ".next", ".output", "dist"]
 }

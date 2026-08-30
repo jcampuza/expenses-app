@@ -1,10 +1,7 @@
-"use client";
-
 import { cn, formatDollars } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
+import { createQuery } from "@/lib/convex";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const getBalanceTitle = (totalBalance: number, userName?: string | null) => {
@@ -20,35 +17,33 @@ const getBalanceTitle = (totalBalance: number, userName?: string | null) => {
 
 export function ConnectionsPageHeaderSkeleton() {
   return (
-    <div className="space-y-2">
-      <Skeleton className="h-8 w-60" />
-      <Skeleton className="h-8 w-80" />
+    <div class="space-y-2">
+      <Skeleton class="h-8 w-60" />
+      <Skeleton class="h-8 w-80" />
     </div>
   );
 }
 
-export function ConnectionsPageHeader({
-  connectionId,
-}: {
+export function ConnectionsPageHeader(props: {
   connectionId: Id<"user_connections">;
 }) {
-  const expensesQuery = useSuspenseQuery(
-    convexQuery(api.expenses.getSharedExpenses, { connectionId }),
-  );
+  const expensesQuery = createQuery(api.expenses.getSharedExpenses, () => ({
+    connectionId: props.connectionId,
+  }));
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">{expensesQuery.data.user.name}</h1>
+      <h1 class="text-2xl font-semibold">{expensesQuery()?.user.name}</h1>
       <p
-        className={cn(
+        class={cn(
           "mb-4",
-          expensesQuery.data.totalBalance > 0 && "text-success",
-          expensesQuery.data.totalBalance < 0 && "text-destructive",
+          (expensesQuery()?.totalBalance ?? 0) > 0 && "text-success",
+          (expensesQuery()?.totalBalance ?? 0) < 0 && "text-destructive",
         )}
       >
         {getBalanceTitle(
-          expensesQuery.data.totalBalance,
-          expensesQuery.data.user.name,
+          expensesQuery()?.totalBalance ?? 0,
+          expensesQuery()?.user.name,
         )}
       </p>
     </div>

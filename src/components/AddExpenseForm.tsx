@@ -1,26 +1,23 @@
-import React, { useRef, useState } from "react";
-
+import { createMemo, createSignal, For, Show } from "solid-js";
 import { Input, Select } from "@/components/ui/input";
 import { NumberInput } from "@/components/NumberInput";
 import { Label } from "@/components/ui/label";
-
 import { CATEGORIES, suggestCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
+import { createQuery } from "@/lib/convex";
 
-export function AddExpenseForm({
-  initialValues,
-  onSubmit,
-  id,
-  ref,
-  isNewExpense = false,
-  className,
-  currentUserId,
-  otherUserId,
-}: {
+export type ExpenseFormValue = {
+  name: string;
+  totalCost: number;
+  category: string;
+  currency: string;
+  paidBy: Id<"users">;
+  splitEqually: boolean;
+};
+
+export function AddExpenseForm(props: {
   initialValues: {
     name: string;
     category: string;
@@ -30,118 +27,66 @@ export function AddExpenseForm({
     splitEqually: boolean;
   };
   id: string;
-  onSubmit: (
-    e: React.FormEvent<HTMLFormElement>,
-    value: {
-      name: string;
-      totalCost: number;
-      category: string;
-      currency: string;
-      paidBy: Id<"users">;
-      splitEqually: boolean;
-    },
-  ) => void;
-  ref?: React.Ref<HTMLFormElement>;
+  onSubmit: (event: SubmitEvent, value: ExpenseFormValue) => void;
+  ref?: (el: HTMLFormElement) => void;
   isNewExpense?: boolean;
-  className?: string;
+  class?: string;
   currentUserId: Id<"users">;
   otherUserId: Id<"users">;
 }) {
-  const isManualSelection = useRef(false);
-  const [selectedCurrency, setSelectedCurrency] = useState(
-    initialValues.currency,
+  let isManualSelection = false;
+  let categorySelect: HTMLSelectElement | undefined;
+  const [selectedCurrency, setSelectedCurrency] = createSignal(
+    props.initialValues.currency,
   );
-  const [totalCost, setTotalCost] = useState(
-    initialValues.totalCost === 0 ? "" : initialValues.totalCost.toString(),
-  );
-  const categorySelectRef = useRef<HTMLSelectElement>(null);
-
-  const supportedCurrencies = useSuspenseQuery(
-    convexQuery(api.exchangeRates.getSupportedCurrencies, {}),
+  const [totalCost, setTotalCost] = createSignal(
+    props.initialValues.totalCost === 0
+      ? ""
+      : props.initialValues.totalCost.toString(),
   );
 
-  const exchangeRate = supportedCurrencies.data.find((c) => {
-    return c.currency === selectedCurrency;
-  });
+  const supportedCurrencies = createQuery(
+    api.exchangeRates.getSupportedCurrencies,
+  );
+  const currencies = createMemo(() => supportedCurrencies() ?? []);
+  const exchangeRate = createMemo(() =>
+    currencies().find((c) => c.currency === selectedCurrency()),
+  );
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-
-    if (isNewExpense && categorySelectRef.current && newName.length >= 3) {
-      const currentCategory = categorySelectRef.current.value;
-      const shouldSuggest =
-        !isManualSelection.current ||
-        currentCategory === "None" ||
-        !currentCategory;
-
-      if (shouldSuggest) {
-        const suggestedCategory = suggestCategory(newName);
-        if (suggestedCategory) {
-          categorySelectRef.current.value = suggestedCategory;
-        }
-      }
-    }
-  };
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCategory = e.target.value;
-    if (selectedCategory === "None" || !selectedCategory) {
-      isManualSelection.current = false;
-    } else {
-      isManualSelection.current = true;
-    }
-  };
-
-  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCurrency(e.target.value);
-  };
-
-  const handleTotalCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTotalCost(e.target.value);
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const form = e.currentTarget as HTMLFormElement;
+  const handleSubmit = (event: SubmitEvent) => {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
     const formData = Object.fromEntries(new FormData(form).entries());
-
-    const {
-      "expense-name": name,
-      "expense-totalcost": totalCost,
-      "expense-category": category,
-      "expense-currency": currency,
-      "expense-paidBy": paidBy,
-      "expense-splitEqually": splitEqually,
-    } = formData;
+    const name = formData["expense-name"];
+    const costRaw = formData["expense-totalcost"];
+    const category = formData["expense-category"];
+    const currency = formData["expense-currency"];
+    const paidBy = formData["expense-paidBy"];
+    const splitEqually = formData["expense-splitEqually"];
 
     if (typeof name !== "string" || name.trim() === "") {
       alert("Name must be a non-empty string");
       return;
     }
-
-    const cost = parseFloat(totalCost as string);
+    const cost = parseFloat(String(costRaw));
     if (isNaN(cost)) {
       alert("Total cost must be a valid number");
       return;
     }
-
     if (typeof category !== "string" || category.trim() === "") {
       alert("Category must be selected");
       return;
     }
-
     if (typeof currency !== "string" || currency.trim() === "") {
       alert("Currency must be selected");
       return;
     }
-
     if (typeof paidBy !== "string" || paidBy.trim() === "") {
       alert("Who paid must be selected");
       return;
     }
 
-    onSubmit(e, {
+    props.onSubmit(event, {
       name: name.trim(),
       totalCost: cost,
       category: category.trim(),
@@ -154,129 +99,154 @@ export function AddExpenseForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn("space-y-4", className)}
-      id={id}
-      ref={ref}
+      class={cn("space-y-4", props.class)}
+      id={props.id}
+      ref={props.ref}
     >
       <div>
-        <Label htmlFor={`${id}-totalcost`}>Total Cost</Label>
+        <Label for={`${props.id}-totalcost`}>Total Cost</Label>
         <NumberInput
-          id={`${id}-totalcost`}
+          id={`${props.id}-totalcost`}
           name="expense-totalcost"
           allowDecimal={true}
           required
-          className="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
-          defaultValue={
-            initialValues.totalCost === 0 ? "" : initialValues.totalCost
-          }
-          onChange={handleTotalCostChange}
+          class="w-full rounded border p-3 text-base sm:p-2 sm:text-sm"
+          value={totalCost()}
+          onInput={(event) => setTotalCost(event.currentTarget.value)}
         />
-
-        {selectedCurrency !== "USD" && exchangeRate && totalCost && (
-          <div className="mt-2 text-sm text-muted-foreground">
-            ≈ ${(parseFloat(totalCost) / exchangeRate.rate).toFixed(2)} USD
+        <Show
+          when={selectedCurrency() !== "USD" && exchangeRate() && totalCost()}
+        >
+          <div class="mt-2 text-sm text-muted-foreground">
+            ≈ $
+            {(parseFloat(totalCost()) / (exchangeRate()?.rate ?? 1)).toFixed(2)}{" "}
+            USD
           </div>
-        )}
+        </Show>
       </div>
 
       <div>
         <Label
-          htmlFor={`${id}-name`}
-          className="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
+          for={`${props.id}-name`}
+          class="mb-2 block text-base font-medium sm:mb-1 sm:text-sm"
         >
           Name
         </Label>
         <Input
-          id={`${id}-name`}
+          id={`${props.id}-name`}
           name="expense-name"
           type="text"
           required
-          defaultValue={initialValues.name}
-          onChange={handleNameChange}
+          value={props.initialValues.name}
+          onInput={(event) => {
+            const newName = event.currentTarget.value;
+            if (props.isNewExpense && categorySelect && newName.length >= 3) {
+              const currentCategory = categorySelect.value;
+              const shouldSuggest =
+                !isManualSelection ||
+                currentCategory === "None" ||
+                !currentCategory;
+              if (shouldSuggest) {
+                const suggestedCategory = suggestCategory(newName);
+                if (suggestedCategory) {
+                  categorySelect.value = suggestedCategory;
+                }
+              }
+            }
+          }}
         />
       </div>
 
       <div>
-        <Label htmlFor={`${id}-currency`}>Currency</Label>
-        <Select
-          id={`${id}-currency`}
-          name="expense-currency"
-          required
-          defaultValue={initialValues.currency}
-          onChange={handleCurrencyChange}
-        >
-          {supportedCurrencies.data.map((currencyData) => (
-            <option key={currencyData.currency} value={currencyData.currency}>
-              {currencyData.currency}
-            </option>
-          ))}
-        </Select>
-
-        {selectedCurrency !== "USD" && exchangeRate && (
-          <div className="mt-2 text-sm text-muted-foreground">
+        <Label for={`${props.id}-currency`}>Currency</Label>
+        <Show when={supportedCurrencies() != null}>
+          <Select
+            id={`${props.id}-currency`}
+            name="expense-currency"
+            required
+            value={props.initialValues.currency}
+            onChange={(event) => setSelectedCurrency(event.currentTarget.value)}
+          >
+            <For each={Array.from(currencies())}>
+              {(currencyData) => (
+                <option value={currencyData.currency}>
+                  {currencyData.currency}
+                </option>
+              )}
+            </For>
+          </Select>
+        </Show>
+        <Show when={selectedCurrency() !== "USD" && exchangeRate()}>
+          <div class="mt-2 text-sm text-muted-foreground">
             <div>
-              {exchangeRate.rate.toFixed(2)} {selectedCurrency} = 1 USD
+              {exchangeRate()?.rate.toFixed(2)} {selectedCurrency()} = 1 USD
             </div>
-            <div className="text-xs text-muted-foreground">
-              (last updated: {new Date(exchangeRate.date).toLocaleDateString()})
+            <div class="text-xs text-muted-foreground">
+              (last updated:{" "}
+              {new Date(exchangeRate()?.date ?? 0).toLocaleDateString()})
             </div>
           </div>
-        )}
+        </Show>
       </div>
 
       <div>
-        <Label htmlFor={`${id}-category`}>Category</Label>
+        <Label for={`${props.id}-category`}>Category</Label>
         <Select
-          id={`${id}-category`}
+          id={`${props.id}-category`}
           name="expense-category"
           required
-          defaultValue={initialValues.category}
-          onChange={handleCategoryChange}
-          ref={categorySelectRef}
+          value={props.initialValues.category}
+          ref={(el) => {
+            categorySelect = el;
+          }}
+          onChange={(event) => {
+            const selectedCategory = event.currentTarget.value;
+            isManualSelection = !(
+              selectedCategory === "None" || !selectedCategory
+            );
+          }}
         >
-          {CATEGORIES.map((category: string) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
+          <For each={CATEGORIES}>
+            {(category) => <option value={category}>{category}</option>}
+          </For>
         </Select>
       </div>
 
       <div>
-        <Label htmlFor={`${id}-paidBy`}>Who Paid?</Label>
+        <Label for={`${props.id}-paidBy`}>Who Paid?</Label>
         <Select
-          id={`${id}-paidBy`}
+          id={`${props.id}-paidBy`}
           name="expense-paidBy"
           required
-          defaultValue={initialValues.paidBy}
+          value={props.initialValues.paidBy}
         >
-          <option value={currentUserId}>You</option>
-          <option value={otherUserId}>Them</option>
+          <option value={props.currentUserId}>You</option>
+          <option value={props.otherUserId}>Them</option>
         </Select>
       </div>
 
       <div>
-        <Label htmlFor={`${id}-splitEqually`}>Split Type</Label>
+        <Label for={`${props.id}-splitEqually`}>Split Type</Label>
         <Select
-          id={`${id}-splitEqually`}
+          id={`${props.id}-splitEqually`}
           name="expense-splitEqually"
           required
-          defaultValue={initialValues.splitEqually ? "true" : "false"}
+          value={props.initialValues.splitEqually ? "true" : "false"}
         >
           <option value="true">Split Equally</option>
           <option value="false">One Person Pays All</option>
         </Select>
       </div>
 
-      {!isNewExpense && selectedCurrency !== "USD" && (
-        <div className="mt-4 rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
-          <div className="text-sm text-blue-600">
-            <strong>Note:</strong> When editing this expense, we&apos;ll use the
+      <Show when={!props.isNewExpense && selectedCurrency() !== "USD"}>
+        <div class="mt-4 rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
+          <div class="text-sm text-blue-600">
+            <strong>Note:</strong> When editing this expense, we'll use the
             latest exchange rate, not necessarily the exchange rate from when
             the expense was originally added.
           </div>
         </div>
-      )}
+      </Show>
     </form>
   );
 }

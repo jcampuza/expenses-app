@@ -1,58 +1,46 @@
-"use client";
-
-import * as React from "react";
-import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
-
+import { createSignal, Show, type ParentProps } from "solid-js";
 import { cn } from "@/lib/utils";
 
-function Avatar({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+export function Avatar(props: ParentProps<{ class?: string }>) {
   return (
-    <AvatarPrimitive.Root
-      data-slot="avatar"
-      className={cn(
+    <span
+      class={cn(
         "relative flex size-8 shrink-0 overflow-hidden rounded-full",
-        className,
+        props.class,
       )}
-      {...props}
-    />
+    >
+      {props.children}
+    </span>
   );
 }
 
-function AvatarImage({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
-  return (
-    <AvatarPrimitive.Image
-      data-slot="avatar-image"
-      className={cn("aspect-square size-full", className)}
-      {...props}
-    />
-  );
-}
-
-function AvatarFallback({
-  className,
-  delay,
-  delayMs,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback> & {
-  delayMs?: React.ComponentProps<typeof AvatarPrimitive.Fallback>["delay"];
+export function AvatarImage(props: {
+  src?: string;
+  alt?: string;
+  class?: string;
 }) {
+  const [failed, setFailed] = createSignal(false);
   return (
-    <AvatarPrimitive.Fallback
-      data-slot="avatar-fallback"
-      delay={delay ?? delayMs}
-      className={cn(
-        "flex size-full items-center justify-center rounded-full bg-muted",
-        className,
-      )}
-      {...props}
-    />
+    <Show when={props.src && !failed()}>
+      <img
+        src={props.src}
+        alt={props.alt}
+        class={cn("aspect-square size-full", props.class)}
+        onError={() => setFailed(true)}
+      />
+    </Show>
   );
 }
 
-export { Avatar, AvatarImage, AvatarFallback };
+export function AvatarFallback(props: ParentProps<{ class?: string }>) {
+  return (
+    <span
+      class={cn(
+        "flex size-full items-center justify-center rounded-full bg-muted",
+        props.class,
+      )}
+    >
+      {props.children}
+    </span>
+  );
+}

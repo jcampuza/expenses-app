@@ -1,10 +1,6 @@
-import React from "react";
+import type { ParentProps } from "solid-js";
 
-type VisuallyHiddenProps = {
-  children: React.ReactNode;
-};
-
-const VisuallyHidden: React.FC<VisuallyHiddenProps> = ({ children }) => {
+export function VisuallyHidden(props: ParentProps) {
   return (
     <span
       style={{
@@ -15,13 +11,11 @@ const VisuallyHidden: React.FC<VisuallyHiddenProps> = ({ children }) => {
         padding: "0",
         overflow: "hidden",
         clip: "rect(0, 0, 0, 0)",
-        whiteSpace: "nowrap",
+        "white-space": "nowrap",
         border: "0",
       }}
     >
-      {children}
+      {props.children}
     </span>
   );
-};
-
-export { VisuallyHidden };
+}

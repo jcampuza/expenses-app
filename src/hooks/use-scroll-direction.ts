@@ -1,34 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { createSignal, onSettled } from "solid-js";
 
 export type ScrollDirection = "UP" | "DOWN" | "IDLE";
 
-export function useScrollDirection(): {
-  scrollDirection: ScrollDirection;
-  isAtTop: boolean;
-} {
+export function useScrollDirection() {
   const [scrollDirection, setScrollDirection] =
-    useState<ScrollDirection>("IDLE");
-  const [isAtTop, setIsAtTop] = useState(true);
-  const lastScrollYRef = useRef(0);
+    createSignal<ScrollDirection>("IDLE");
+  const [isAtTop, setIsAtTop] = createSignal(true);
+  let lastScrollY = 0;
 
-  useEffect(() => {
+  onSettled(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      if (currentScrollY === lastScrollYRef.current) {
-        return;
-      }
-
-      setScrollDirection(
-        currentScrollY > lastScrollYRef.current ? "DOWN" : "UP",
-      );
+      if (currentScrollY === lastScrollY) return;
+      setScrollDirection(currentScrollY > lastScrollY ? "DOWN" : "UP");
       setIsAtTop(currentScrollY === 0);
-      lastScrollYRef.current = currentScrollY;
+      lastScrollY = currentScrollY;
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  });
 
   return { scrollDirection, isAtTop };
 }

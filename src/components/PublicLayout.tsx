@@ -1,14 +1,14 @@
+import type { ParentProps } from "solid-js";
 import Footer from "@/components/Footer";
 import { Header } from "@/components/Header";
-import React from "react";
 
-export function PublicLayout({ children }: { children: React.ReactNode }) {
+export function PublicLayout(props: ParentProps) {
   return (
-    <div className="flex flex-col">
-      <div className="flex min-h-screen flex-col">
+    <div class="flex flex-col">
+      <div class="flex min-h-screen flex-col">
         <Header />
-        <div className="relative container mx-auto flex grow flex-col">
-          {children}
+        <div class="relative container mx-auto flex grow flex-col">
+          {props.children}
         </div>
         <Footer />
       </div>

@@ -1,16 +1,11 @@
+import type { JSX } from "@solidjs/web";
 import { cn } from "@/lib/utils";
-import React from "react";
 
-function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function Skeleton(props: JSX.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-primary/10", className)}
       {...props}
+      class={cn("animate-pulse rounded-md bg-primary/10", props.class)}
     />
   );
 }
-
-export { Skeleton };

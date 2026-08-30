@@ -1,10 +1,8 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import convexPlugin from "@convex-dev/eslint-plugin";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
+import solid from "eslint-plugin-solid/configs/v2";
 import { defineConfig } from "eslint/config";
-import globals from "globals";
 
 export default defineConfig([
   {
@@ -12,24 +10,60 @@ export default defineConfig([
       "convex/_generated/**",
       "dist",
       ".output",
-      "src/routeTree.gen.ts",
+      "file-routes.d.ts",
     ],
+  },
+  {
+    files: ["src/**/*.{ts,tsx,js,jsx}"],
+    ...solid,
+    rules: {
+      ...solid.rules,
+      // Solid 2 exports JSX types from `@solidjs/web`, not `solid-js`.
+      "solid/imports": "off",
+    },
   },
   {
     files: ["**/*.{ts,tsx,js,jsx,mts,cts}"],
     languageOptions: {
       globals: {
-        ...globals.browser,
-        ...globals.node,
+        window: "readonly",
+        document: "readonly",
+        navigator: "readonly",
+        console: "readonly",
+        fetch: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        process: "readonly",
+        URL: "readonly",
+        HTMLElement: "readonly",
+        HTMLInputElement: "readonly",
+        HTMLFormElement: "readonly",
+        HTMLSelectElement: "readonly",
+        HTMLButtonElement: "readonly",
+        HTMLDialogElement: "readonly",
+        KeyboardEvent: "readonly",
+        Event: "readonly",
+        CustomEvent: "readonly",
+        FormData: "readonly",
+        ReadableStream: "readonly",
+        AbortController: "readonly",
+        SubmitEvent: "readonly",
+        InputEvent: "readonly",
+        MouseEvent: "readonly",
+        PointerEvent: "readonly",
+        HTMLDivElement: "readonly",
+        HTMLTableElement: "readonly",
+        HTMLTableSectionElement: "readonly",
+        HTMLTableRowElement: "readonly",
+        HTMLTableCellElement: "readonly",
+        HTMLLabelElement: "readonly",
+        SVGSVGElement: "readonly",
       },
-    },
-    plugins: {
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
     },
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...convexPlugin.configs.recommended,
-  reactHooks.configs.flat.recommended,
 ]);

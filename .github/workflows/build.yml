@@ -40,5 +40,8 @@ jobs:
       - name: Run Format Check
         run: bun run format:check
 
+      - name: Run Tests
+        run: bun run test
+
       - name: Run Build
         run: bun run build

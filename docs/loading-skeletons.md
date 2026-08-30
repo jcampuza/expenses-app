@@ -1,14 +1,14 @@
 ### Loading skeletons for dynamic loading features
 
-This guide describes how we implement loading skeletons when data is fetched dynamically (e.g., via `useSuspenseQuery` + `convexQuery`) so only the relevant area displays a loader, not the entire page.
+This guide describes how we implement loading skeletons when data is fetched dynamically (via `createQuery` from `src/lib/convex.ts`) so only the relevant area displays a loader, not the entire page.
 
 ## Goals
 
-- **Localize loading**: Wrap only the smallest meaningful sub-tree (e.g., a tab pane, a card list, or a dialog body) in a `Suspense` boundary.
+- **Localize loading**: Wrap only the smallest meaningful sub-tree (e.g., a card list or a dialog body) in a `<Loading>` boundary.
 - **Avoid layout shift**: Skeletons should roughly match the rendered layout’s size.
-- **Keep the scaffold visible**: Headers, tabs, and surrounding UI remain interactive while content loads.
+- **Keep the scaffold visible**: Headers and surrounding UI remain interactive while content loads.
 
-## Where to place Suspense boundaries
+## Where to place Loading boundaries
 
 - **Content sections**: Wrap content sections that load data dynamically.
 - **Dialog content**: Wrap the dialog body that loads form data.
@@ -17,15 +17,15 @@ This guide describes how we implement loading skeletons when data is fetched dyn
 Example (expense content):
 
 ```tsx
-import { Suspense } from "react";
-import { ExpensesTabContent } from "./ExpensesTabContent";
-import { ExpensesTabSkeleton } from "./YourSkeletons";
+import { Loading } from "solid-js";
+import { ConnectionExpenseList } from "./ExpensesTabContent";
+import { ConnectionExpenseListSkeleton } from "./ExpensesTabContent";
 
-export function ExampleTabs({ connectionId }: { connectionId: string }) {
+export function ExampleList(props: { connectionId: string }) {
   return (
-    <Suspense fallback={<ExpensesTabSkeleton />}>
-      <ExpensesTabContent connectionId={connectionId as any} />
-    </Suspense>
+    <Loading fallback={<ConnectionExpenseListSkeleton />}>
+      <ConnectionExpenseList connectionId={props.connectionId} />
+    </Loading>
   );
 }
 ```
@@ -33,17 +33,17 @@ export function ExampleTabs({ connectionId }: { connectionId: string }) {
 Example (dialog content):
 
 ```tsx
-import { Suspense } from "react";
+import { Loading } from "solid-js";
 import { DialogContent } from "@/components/ui/dialog";
 import { LoadingFormComponent } from "@/components/LoadingComponent";
 import { AddExpenseForm } from "./AddExpenseForm";
 
-export function AddExpenseDialogBody(props: any) {
+export function AddExpenseDialogBody(props: { connectionId: string }) {
   return (
     <DialogContent>
-      <Suspense fallback={<LoadingFormComponent />}>
+      <Loading fallback={<LoadingFormComponent />}>
         <AddExpenseForm {...props} />
-      </Suspense>
+      </Loading>
     </DialogContent>
   );
 }
@@ -52,7 +52,7 @@ export function AddExpenseDialogBody(props: any) {
 ## Building skeletons
 
 - **Primitive**: Use `Skeleton` from `src/components/ui/skeleton.tsx`.
-- **Composed skeletons**: Build feature-specific skeletons (e.g., `SkeletonCard`, `ExpensesTabSkeleton`) using the primitive. Keep sizes close to final UI.
+- **Composed skeletons**: Build feature-specific skeletons (e.g., `SkeletonCard`, `ConnectionExpenseListSkeleton`) using the primitive. Keep sizes close to final UI.
 - **Placement**:
   - Shared shapes: `src/components/ui/skeleton.tsx` and `src/components/Skeletons.tsx`.
   - Feature-specific: Near the feature component or co-located in the same file when small.
@@ -60,71 +60,52 @@ export function AddExpenseDialogBody(props: any) {
 Example (feature skeletons):
 
 ```tsx
+import { Repeat } from "solid-js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonCard } from "@/components/Skeletons";
 
-export function ExpensesTabSkeleton() {
+export function ConnectionExpenseListSkeleton() {
   return (
     <div>
-      <Skeleton className="h-9 w-full" />
-      <div className="my-4" />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, idx) => (
-          <SkeletonCard key={idx} />
-        ))}
+      <Skeleton class="h-9 w-full" />
+      <div class="my-4" />
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Repeat count={6}>
+          <SkeletonCard />
+        </Repeat>
       </div>
-    </div>
-  );
-}
-
-export function ActivityTabSkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 5 }).map((_, idx) => (
-        <div key={idx} className="rounded-md border p-3">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-3 w-20" />
-          </div>
-          <div className="mt-2 space-y-2">
-            <Skeleton className="h-3 w-2/3" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
 ```
 
-## Query strategy inside Suspense
+## Query strategy inside Loading
 
-- **Co-locate queries**: Put the `useSuspenseQuery` calls inside the component that sits within the boundary. Each boundary should fully satisfy its own data needs.
-- **Parent vs child data**: If parent data is required to render headers or the page scaffold, fetch it above the boundaries so only the child content suspends.
+- **Co-locate queries**: Put the `createQuery` calls inside the component that sits within the boundary. Each boundary should fully satisfy its own data needs.
+- **Parent vs child data**: If parent data is required to render headers or the page scaffold, fetch it above the boundaries so only the child content waits.
 
 ## Accessibility and UX
 
 - **Animation**: Our skeletons use `animate-pulse`. Keep it subtle to avoid distraction.
-- **Focus and keyboard**: Maintain tabs and controls outside the suspended region so navigation remains usable.
+- **Focus and keyboard**: Maintain controls outside the loading region so navigation remains usable.
 - **Dimensions**: Match final layout dimensions to prevent content jump when data resolves.
 
 ## Do and don’t
 
-- **Do**: Wrap the smallest meaningful component subtree that suspends.
+- **Do**: Wrap the smallest meaningful component subtree that waits on async data.
 - **Do**: Create tailored skeletons that mirror the final layout.
 - **Don’t**: Wrap entire pages or layouts in a single boundary—this causes full-page loaders.
 - **Don’t**: Use a one-size-fits-all skeleton for complex views.
 
 ## Naming and file placement
 
-- **Skeleton components**: `FeatureAreaSkeleton` (e.g., `ExpensesTabSkeleton`).
+- **Skeleton components**: `FeatureAreaSkeleton` (e.g., `ConnectionExpenseListSkeleton`).
 - **Shared primitives**: Keep in `src/components/ui/skeleton.tsx` and `src/components/Skeletons.tsx`.
 - **Feature-specific skeletons**: Co-locate near the feature component or in the same file if small and reused only there.
 
 ## Checklist
 
-- **Boundary**: Add a `Suspense` boundary around the smallest dynamic section.
+- **Boundary**: Add a `<Loading>` boundary around the smallest dynamic section.
 - **Fallback**: Provide a feature-appropriate skeleton.
-- **Client component**: Ensure the parent that renders `Suspense` is a `"use client"` component.
-- **Queries**: Use `useSuspenseQuery` inside the boundary and avoid leaking suspension to higher levels.
-- **Verify**: Switch between tabs/sections to confirm only the content area shows the loader.
+- **Queries**: Use `createQuery` inside the boundary and avoid leaking pending state to higher levels.
+- **Verify**: Confirm only the content area shows the loader while the surrounding chrome stays visible.

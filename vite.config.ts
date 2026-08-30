@@ -1,8 +1,7 @@
 import { defineConfig } from "vite";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
+import solid from "@solidjs/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import { fileRoutes } from "filesystem-routing/vite";
 import { analyzer } from "vite-bundle-analyzer";
 
 export default defineConfig({
@@ -14,15 +13,11 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    tanstackRouter({
-      routesDirectory: "src/app",
-      target: "react",
-      autoCodeSplitting: true,
+    solid({
+      start: true,
+      extensions: [".jsx", ".tsx"],
     }),
-    react(),
-    babel({
-      presets: [reactCompilerPreset()],
-    }),
+    fileRoutes(),
     process.env.ANALYZE === "true" ? analyzer() : null,
   ],
 });

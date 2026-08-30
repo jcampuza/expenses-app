@@ -1,10 +1,11 @@
-import React from "react";
+import type { JSX } from "@solidjs/web";
+import { omit } from "solid-js";
 import { Input } from "./ui/input";
 
-export interface NumberInputProps extends React.ComponentProps<typeof Input> {
+export type NumberInputProps = JSX.InputHTMLAttributes<HTMLInputElement> & {
   allowDecimal?: boolean;
   allowNegative?: boolean;
-}
+};
 
 const ALLOWED_KEYS = new Set([
   "Backspace",
@@ -22,32 +23,8 @@ const ALLOWED_KEYS = new Set([
 
 type PatternRegexMode = {
   regex: RegExp;
-  inputPattern: HTMLInputElement["inputMode"];
+  inputPattern: string;
   mode: "numeric" | "decimal";
-};
-
-const DECIMA_NEGATIVE_CONFIG: PatternRegexMode = {
-  regex: /^-?\d*(\.\d*)?$/,
-  inputPattern: "^-?\\d*(\\.\\d*)?$",
-  mode: "decimal",
-};
-
-const DECIMAL_CONFIG: PatternRegexMode = {
-  regex: /^\d*(\.\d*)?$/,
-  inputPattern: "^\\d*(\\.\\d*)?$",
-  mode: "decimal",
-};
-
-const NEGATIVE_CONFIG: PatternRegexMode = {
-  regex: /^-?\d*$/,
-  inputPattern: "^-?\\d*$",
-  mode: "numeric",
-};
-
-const DEFAULT_CONFIG: PatternRegexMode = {
-  regex: /^[0-9]*$/,
-  inputPattern: "^[0-9]*$",
-  mode: "numeric",
 };
 
 const getPatternRegexMode = (
@@ -55,86 +32,88 @@ const getPatternRegexMode = (
   allowNegative: boolean,
 ): PatternRegexMode => {
   if (allowDecimal && allowNegative) {
-    return DECIMA_NEGATIVE_CONFIG;
-  } else if (allowDecimal) {
-    return DECIMAL_CONFIG;
-  } else if (allowNegative) {
-    return NEGATIVE_CONFIG;
+    return {
+      regex: /^-?\d*(\.\d*)?$/,
+      inputPattern: "^-?\\d*(\\.\\d*)?$",
+      mode: "decimal",
+    };
   }
-
-  return DEFAULT_CONFIG;
+  if (allowDecimal) {
+    return {
+      regex: /^\d*(\.\d*)?$/,
+      inputPattern: "^\\d*(\\.\\d*)?$",
+      mode: "decimal",
+    };
+  }
+  if (allowNegative) {
+    return {
+      regex: /^-?\d*$/,
+      inputPattern: "^-?\\d*$",
+      mode: "numeric",
+    };
+  }
+  return {
+    regex: /^[0-9]*$/,
+    inputPattern: "^[0-9]*$",
+    mode: "numeric",
+  };
 };
-export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
-  (
-    {
-      allowDecimal = false,
-      allowNegative = false,
-      pattern,
-      inputMode,
-      onChange,
-      value,
-      ...props
-    },
-    ref,
+
+export function NumberInput(props: NumberInputProps) {
+  const rest = omit(
+    props,
+    "allowDecimal",
+    "allowNegative",
+    "onInput",
+    "onKeyDown",
+  );
+  const config = () =>
+    getPatternRegexMode(
+      Boolean(props.allowDecimal),
+      Boolean(props.allowNegative),
+    );
+
+  const handleInput: JSX.InputEventHandler<HTMLInputElement, InputEvent> = (
+    event,
   ) => {
-    // Build regex pattern based on props
-    const { regex, inputPattern, mode } = getPatternRegexMode(
-      allowDecimal,
-      allowNegative,
-    );
-
-    // Handler to filter input
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      if (val === "" || regex.test(val)) {
-        onChange?.(e);
-      } else {
-        // Prevent invalid input by resetting to the previous valid value
-        e.target.value = (value as string) || "";
+    const val = event.currentTarget.value;
+    if (val === "" || config().regex.test(val)) {
+      const onInput = props.onInput;
+      if (typeof onInput === "function") {
+        onInput(event);
       }
-    };
+      return;
+    }
+    event.currentTarget.value = String(props.value ?? "");
+  };
 
-    // Handler to prevent invalid keystrokes
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      // Allow control keys (backspace, delete, arrow keys, etc.)
-      if (
-        ALLOWED_KEYS.has(e.key) ||
-        e.ctrlKey ||
-        e.metaKey // Allow Ctrl/Cmd shortcuts
-      ) {
-        return;
-      }
+  const handleKeyDown: JSX.EventHandler<HTMLInputElement, KeyboardEvent> = (
+    event,
+  ) => {
+    if (ALLOWED_KEYS.has(event.key) || event.ctrlKey || event.metaKey) {
+      return;
+    }
+    const currentValue = event.currentTarget.value;
+    const selectionStart = event.currentTarget.selectionStart || 0;
+    const selectionEnd = event.currentTarget.selectionEnd || 0;
+    const newValue =
+      currentValue.slice(0, selectionStart) +
+      event.key +
+      currentValue.slice(selectionEnd);
+    if (newValue !== "" && !config().regex.test(newValue)) {
+      event.preventDefault();
+    }
+  };
 
-      // Check if the key would result in a valid input
-      const currentValue = e.currentTarget.value;
-      const selectionStart = e.currentTarget.selectionStart || 0;
-      const selectionEnd = e.currentTarget.selectionEnd || 0;
-
-      // Simulate the new value after the key press
-      const newValue =
-        currentValue.slice(0, selectionStart) +
-        e.key +
-        currentValue.slice(selectionEnd);
-
-      // Test if the new value would be valid
-      if (newValue !== "" && !regex.test(newValue)) {
-        e.preventDefault();
-      }
-    };
-
-    return (
-      <Input
-        type="text"
-        autoComplete="off"
-        ref={ref}
-        {...props}
-        inputMode={inputMode || mode}
-        pattern={pattern || inputPattern}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        {...(value !== undefined ? { value } : {})}
-      />
-    );
-  },
-);
-NumberInput.displayName = "NumberInput";
+  return (
+    <Input
+      type="text"
+      autocomplete="off"
+      {...rest}
+      inputmode={props.inputmode || config().mode}
+      pattern={props.pattern || config().inputPattern}
+      onInput={handleInput}
+      onKeyDown={handleKeyDown}
+    />
+  );
+}
