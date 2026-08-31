@@ -20,10 +20,9 @@ const ConvexContext = createContext<{
   client: ConvexClient;
   isLoading: Accessor<boolean>;
   isAuthenticated: Accessor<boolean>;
-  setAuthStatus: (status: {
-    isLoading: boolean;
-    isAuthenticated: boolean;
-  }) => void;
+  isRefreshing: Accessor<boolean>;
+  setAuthenticated: (value: boolean | null) => void;
+  setRefreshing: (value: boolean) => void;
 }>();
 
 export function getConvexClient(): ConvexClient {
@@ -41,20 +40,20 @@ export function ConvexProvider(
 ) {
   // eslint-disable-next-line solid/reactivity -- ConvexClient is created once
   const client = props.client ?? getConvexClient();
-  const [isLoading, setIsLoading] = createSignal(true);
-  const [isAuthenticated, setIsAuthenticated] = createSignal(false);
+  // null = Convex has not confirmed a token yet (initial bootstrap only).
+  const [authConfirmed, setAuthConfirmed] = createSignal<boolean | null>(null);
+  const [isRefreshing, setIsRefreshing] = createSignal(false);
 
   const value = {
     client,
-    isLoading,
-    isAuthenticated,
-    setAuthStatus: (status: {
-      isLoading: boolean;
-      isAuthenticated: boolean;
-    }) => {
-      setIsLoading(status.isLoading);
-      setIsAuthenticated(status.isAuthenticated);
+    isLoading: () => authConfirmed() === null,
+    isAuthenticated: () => authConfirmed() === true,
+    isRefreshing: () => isRefreshing() && authConfirmed() === true,
+    setAuthenticated: (next: boolean | null) => {
+      setAuthConfirmed(next);
+      if (next !== true) setIsRefreshing(false);
     },
+    setRefreshing: setIsRefreshing,
   };
 
   return ConvexContext({
@@ -74,11 +73,16 @@ export function useConvexAuth() {
   return {
     isLoading: ctx.isLoading,
     isAuthenticated: ctx.isAuthenticated,
+    isRefreshing: ctx.isRefreshing,
   };
 }
 
 export function useConvexAuthStatus() {
-  return useContext(ConvexContext).setAuthStatus;
+  const ctx = useContext(ConvexContext);
+  return {
+    setAuthenticated: ctx.setAuthenticated,
+    setRefreshing: ctx.setRefreshing,
+  };
 }
 
 const querySnapshots = new WeakMap<ConvexClient, Map<string, unknown>>();

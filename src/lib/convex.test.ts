@@ -15,6 +15,8 @@ import {
   createMutation,
   createQueryFromClient,
   createQueryStream,
+  useConvexAuth,
+  useConvexAuthStatus,
 } from "./convex";
 
 type QueryRef = FunctionReference<"query">;
@@ -500,6 +502,36 @@ describe("createQuery isolation", () => {
     client.push(otherQuery, {}, { from: "other" });
     expect(await waitForQuery(first)).toEqual({ from: "list" });
     expect(await waitForQuery(second)).toEqual({ from: "other" });
+    dispose();
+  });
+});
+
+describe("ConvexProvider auth confirmation", () => {
+  it("is loading only until Convex confirms a token", () => {
+    const client = new FakeConvexClient();
+    const { result, dispose } = withConvex(client, () => ({
+      auth: useConvexAuth(),
+      status: useConvexAuthStatus(),
+    }));
+    expect(result.auth.isLoading()).toBe(true);
+    expect(result.auth.isAuthenticated()).toBe(false);
+
+    result.status.setAuthenticated(true);
+    flush();
+    expect(result.auth.isLoading()).toBe(false);
+    expect(result.auth.isAuthenticated()).toBe(true);
+
+    result.status.setRefreshing(true);
+    flush();
+    expect(result.auth.isLoading()).toBe(false);
+    expect(result.auth.isAuthenticated()).toBe(true);
+    expect(result.auth.isRefreshing()).toBe(true);
+
+    result.status.setAuthenticated(null);
+    flush();
+    expect(result.auth.isLoading()).toBe(true);
+    expect(result.auth.isAuthenticated()).toBe(false);
+    expect(result.auth.isRefreshing()).toBe(false);
     dispose();
   });
 });

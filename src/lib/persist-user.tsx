@@ -1,6 +1,8 @@
 import {
   createContext,
+  createEffect,
   createMemo,
+  createSignal,
   useContext,
   Loading,
   Show,
@@ -12,23 +14,14 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { createMutation, createQuery, useConvexAuth } from "@/lib/convex";
 import { AuthSpinner } from "@/components/LoadingComponent";
+import {
+  derivePersistAuth,
+  type PersistUserAuth,
+  type PersistUserAuthStatus,
+} from "@/lib/persist-user-state";
 
-export type PersistUserAuthStatus =
-  | "checkingAuth"
-  | "signedOut"
-  | "checkingUser"
-  | "persistingUser"
-  | "ready"
-  | "error";
-
-export type PersistUserAuth = {
-  status: PersistUserAuthStatus;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  isSignedIn: boolean;
-  authState: { userId: Id<"users"> | null };
-  error: Error | null;
-};
+export type { PersistUserAuth, PersistUserAuthStatus };
+export { derivePersistAuth };
 
 const PersistUserContext = createContext<Accessor<PersistUserAuth>>();
 
@@ -49,84 +42,87 @@ export function PersistGate(props: ParentProps) {
     convexAuth.isAuthenticated() ? {} : "skip",
   );
 
+  const [createdUserId, setCreatedUserId] = createSignal<Id<"users"> | null>(
+    null,
+  );
+  const [persistError, setPersistError] = createSignal<Error | null>(null);
+
   let backgroundSyncStarted = false;
-  let persistPromise: Promise<{ userId: Id<"users"> }> | undefined;
+  let persistPromise: Promise<void> | undefined;
 
-  const auth = createMemo(async (): Promise<PersistUserAuth> => {
-    if (convexAuth.isLoading()) {
-      return {
-        status: "checkingAuth",
-        isLoading: true,
-        isAuthenticated: false,
-        isSignedIn: false,
-        authState: { userId: null },
-        error: null,
-      };
-    }
-
-    if (!convexAuth.isAuthenticated()) {
+  createEffect(
+    () => convexAuth.isAuthenticated(),
+    (authenticated) => {
+      if (authenticated) return;
       backgroundSyncStarted = false;
       persistPromise = undefined;
-      return {
-        status: "signedOut",
-        isLoading: false,
-        isAuthenticated: false,
-        isSignedIn: false,
-        authState: { userId: null },
-        error: null,
-      };
-    }
+      setCreatedUserId(null);
+      setPersistError(null);
+    },
+  );
 
-    try {
-      const current = user();
-      if (current) {
-        if (!backgroundSyncStarted) {
-          backgroundSyncStarted = true;
-          void persist({}).catch(() => {
-            backgroundSyncStarted = false;
-          });
-        }
-        return {
-          status: "ready",
-          isLoading: false,
-          isAuthenticated: true,
-          isSignedIn: true,
-          authState: { userId: current._id },
-          error: null,
-        };
+  createEffect(
+    () => {
+      if (!convexAuth.isAuthenticated()) return "idle";
+      try {
+        const current = user();
+        if (current) return "exists";
+        return createdUserId() ? "created" : "create";
+      } catch (error) {
+        if (error instanceof NotReadyError) return "idle";
+        throw error;
       }
+    },
+    (mode) => {
+      if (mode === "exists") {
+        if (backgroundSyncStarted) return;
+        backgroundSyncStarted = true;
+        void persist({}).catch(() => {
+          backgroundSyncStarted = false;
+        });
+        return;
+      }
+      if (mode !== "create") return;
+      persistPromise ??= persist({})
+        .then((result) => {
+          setCreatedUserId(result.userId);
+        })
+        .catch((error) => {
+          persistPromise = undefined;
+          setPersistError(toError(error));
+        });
+    },
+  );
 
-      persistPromise ??= persist({});
-      const created = await persistPromise;
-      return {
-        status: "ready",
-        isLoading: false,
-        isAuthenticated: true,
-        isSignedIn: true,
-        authState: { userId: created.userId },
-        error: null,
-      };
-    } catch (error) {
-      // Pending Convex queries throw NotReadyError; let <Loading> handle that
-      // instead of flashing the persist error screen on refresh.
-      if (error instanceof NotReadyError) throw error;
-      persistPromise = undefined;
-      return {
-        status: "error",
-        isLoading: false,
-        isAuthenticated: false,
-        isSignedIn: true,
-        authState: { userId: null },
-        error: toError(error),
-      };
+  const auth = createMemo((): PersistUserAuth => {
+    if (!convexAuth.isAuthenticated()) {
+      return derivePersistAuth({
+        convexAuthLoading: convexAuth.isLoading(),
+        convexAuthenticated: false,
+        user: null,
+        createdUserId: null,
+        error: persistError(),
+      });
     }
+
+    return derivePersistAuth({
+      convexAuthLoading: convexAuth.isLoading(),
+      convexAuthenticated: true,
+      user: user() ?? null,
+      createdUserId: createdUserId(),
+      error: persistError(),
+    });
   });
 
   return (
     <PersistUserContext value={auth}>
       <Loading fallback={<AuthSpinner />}>
         <Show
-          when={auth().status !== "error" && auth().status !== "checkingAuth"}
+          when={
+            auth().status !== "error" &&
+            auth().status !== "checkingAuth" &&
+            auth().status !== "persistingUser"
+          }
           fallback={
             <Show when={auth().status === "error"} fallback={<AuthSpinner />}>
               <div class="relative container mx-auto flex grow flex-col items-center justify-center gap-2 p-12 text-center">

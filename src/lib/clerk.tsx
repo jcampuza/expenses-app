@@ -13,7 +13,7 @@ import type {
   SignedInSessionResource,
   UserResource,
 } from "@clerk/shared/types";
-import { useConvex, useConvexAuthStatus } from "@/lib/convex";
+import { useConvex, useConvexAuth, useConvexAuthStatus } from "@/lib/convex";
 
 type ClerkState = {
   loaded: boolean;
@@ -124,21 +124,47 @@ export function ConvexClerkAuth(props: ParentProps) {
   const clerk = useClerk();
   const clerkState = useClerkState();
   const client = useConvex();
-  const setAuthStatus = useConvexAuthStatus();
+  const convexAuth = useConvexAuth();
+  const { setAuthenticated } = useConvexAuthStatus();
 
   createEffect(
     () => clerkState().session?.id ?? null,
-    () => {
-      setAuthStatus({ isLoading: true, isAuthenticated: false });
+    (sessionId) => {
+      if (!sessionId) {
+        client.setAuth(
+          async () => null,
+          () => {
+            setAuthenticated(false);
+          },
+        );
+        setAuthenticated(false);
+        return;
+      }
+
+      let cancelled = false;
+      // Stay authenticated while Convex reconfirms a new session/token.
+      // Only the first confirmation should read as loading.
+      if (!convexAuth.isAuthenticated()) {
+        setAuthenticated(null);
+      }
+
       client.setAuth(
-        async () => {
-          const token = await clerk.session?.getToken({ template: "convex" });
-          return token ?? null;
+        async ({ forceRefreshToken }) => {
+          return (
+            (await clerk.session?.getToken({
+              template: "convex",
+              skipCache: forceRefreshToken,
+            })) ?? null
+          );
         },
         (isAuthenticated) => {
-          setAuthStatus({ isLoading: false, isAuthenticated });
+          if (!cancelled) setAuthenticated(isAuthenticated);
         },
       );
+
+      return () => {
+        cancelled = true;
+      };
     },
   );
 
@@ -147,7 +173,7 @@ export function ConvexClerkAuth(props: ParentProps) {
       client.setAuth(
         async () => null,
         () => {
-          setAuthStatus({ isLoading: false, isAuthenticated: false });
+          setAuthenticated(false);
         },
       );
     };
