@@ -1,5 +1,6 @@
 import { Loading } from "solid-js";
 import { useParams } from "@solidjs/router";
+import { DelayedFallback } from "@/components/DelayedFallback";
 import { Id } from "@convex/_generated/dataModel";
 import {
   ConnectionsPageHeader,
@@ -18,7 +19,13 @@ export default function ConnectionPage() {
   return (
     <div class="flex-1 p-4">
       <div class="flex items-center justify-between">
-        <Loading fallback={<ConnectionsPageHeaderSkeleton />}>
+        <Loading
+          fallback={
+            <DelayedFallback>
+              <ConnectionsPageHeaderSkeleton />
+            </DelayedFallback>
+          }
+        >
           <ConnectionsPageHeader connectionId={connectionId()} />
         </Loading>
 
@@ -31,7 +38,13 @@ export default function ConnectionPage() {
       </div>
 
       <div class="mt-2">
-        <Loading fallback={<ConnectionExpenseListSkeleton />}>
+        <Loading
+          fallback={
+            <DelayedFallback>
+              <ConnectionExpenseListSkeleton />
+            </DelayedFallback>
+          }
+        >
           <ConnectionExpenseList connectionId={connectionId()} />
         </Loading>
       </div>
