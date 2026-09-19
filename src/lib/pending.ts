@@ -6,17 +6,19 @@ export function createPendingFn<Args extends unknown[], Result>(
   const [isPending, setIsPending] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
 
-  const mutate = async (...args: Args): Promise<Result | null> => {
+  const mutate = async (
+    ...args: Args
+  ): Promise<{ ok: true; value: Result } | { ok: false; error: string }> => {
     setIsPending(true);
     setError(null);
     try {
       const result = await fn(...args);
-      return result;
+      return { ok: true, value: result };
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unknown error occurred";
       setError(message);
-      return null;
+      return { ok: false, error: message };
     } finally {
       setIsPending(false);
     }

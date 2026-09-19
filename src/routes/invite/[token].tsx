@@ -45,7 +45,7 @@ function InvitationContent(props: { token: () => string }) {
 
   const handleAccept = async () => {
     const result = await accept.mutate({ token: props.token() });
-    if (result !== null) {
+    if (result.ok) {
       navigate("/dashboard");
     }
   };

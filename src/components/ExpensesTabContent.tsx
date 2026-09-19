@@ -270,7 +270,7 @@ export function AddExpenseDialogButton(props: {
       category: values.category,
       currency: values.currency,
     });
-    if (result) {
+    if (result.ok) {
       setOpen(false);
       return;
     }
@@ -536,7 +536,7 @@ function EditExpenseDialog(
     if (!confirmed) return;
     void (async () => {
       const result = await deleteExpense.mutate({ id: props.id });
-      if (result !== null) {
+      if (result.ok) {
         props.onOpenChange(false);
         return;
       }
@@ -563,7 +563,7 @@ function EditExpenseDialog(
         category: value.category,
         currency: value.currency,
       });
-      if (result !== null) {
+      if (result.ok) {
         props.onOpenChange(false);
         return;
       }

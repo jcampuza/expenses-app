@@ -125,7 +125,7 @@ function ExpireInvitationsDialog() {
 
   const handleExpire = async () => {
     const result = await expireInvitations.mutate();
-    if (result !== null) {
+    if (result.ok) {
       setOpen(false);
       toast({
         title: "Invitations Expired",
@@ -192,7 +192,7 @@ function GenerateInvitationDialog() {
     try {
       const dataFromMutation = await getInvitationLink.mutate();
 
-      if (!dataFromMutation) {
+      if (!dataFromMutation.ok) {
         setState({ status: "idle", data: null, invitationLink: null });
         toast({
           title: "Error",
@@ -203,7 +203,7 @@ function GenerateInvitationDialog() {
         return;
       }
 
-      const invitationLink = `${window.location.origin}${dataFromMutation.invitationLink}`;
+      const invitationLink = `${window.location.origin}${dataFromMutation.value.invitationLink}`;
       const { renderSVG } = await import("uqr");
       const svg = renderSVG(invitationLink);
       setState({
@@ -384,7 +384,7 @@ function ConnectionActionsDropdown(props: {
     const result = await deleteConnection.mutate({
       connectionId: props.connectionId,
     });
-    if (result !== null) {
+    if (result.ok) {
       setDeleteDialogOpen(false);
       toast({
         title: "Connection Removed",
