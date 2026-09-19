@@ -174,6 +174,33 @@ function withConvex<T>(client: FakeConvexClient, run: () => T) {
 }
 
 describe("createQueryStream", () => {
+  it("prefers a live null over an older cached document and replays that null", async () => {
+    const client = new FakeConvexClient();
+    client.dropStoreOnUnsubscribe = true;
+    const first = createQueryStream(
+      client as unknown as ConvexClient,
+      otherQuery,
+      {},
+    )[Symbol.asyncIterator]();
+    client.push(otherQuery, {}, { name: "Old user" });
+    await first.next();
+    await first.return?.();
+    client.seed(otherQuery, {}, null);
+    const second = createQueryStream(
+      client as unknown as ConvexClient,
+      otherQuery,
+      {},
+    )[Symbol.asyncIterator]();
+    expect((await second.next()).value).toBeNull();
+    await second.return?.();
+    const third = createQueryStream(
+      client as unknown as ConvexClient,
+      otherQuery,
+      {},
+    )[Symbol.asyncIterator]();
+    expect((await third.next()).value).toBeNull();
+    await third.return?.();
+  });
   it("stays pending until the first live value arrives", async () => {
     const client = new FakeConvexClient();
     const stream = createQueryStream(

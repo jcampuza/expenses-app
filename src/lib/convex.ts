@@ -166,9 +166,11 @@ export function createQueryStream<Query extends FunctionReference<"query">>(
     },
   );
 
+  const liveValue = subscription.getCurrentValue();
   const current =
-    subscription.getCurrentValue() ??
-    (cache.get(cacheKey) as FunctionReturnType<Query> | undefined);
+    liveValue !== undefined
+      ? liveValue
+      : (cache.get(cacheKey) as FunctionReturnType<Query> | undefined);
   if (current !== undefined) {
     cache.set(cacheKey, current);
     values.push(current as FunctionReturnType<Query>);
