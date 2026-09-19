@@ -100,12 +100,12 @@ export function ConnectedUsersList() {
       fallback={<ConnectionsEmpty />}
     >
       <ul class="space-y-3">
-        <For each={connectedUsers() ?? []}>
+        <For each={connectedUsers() ?? []} keyed={(user) => user.connectionId}>
           {(user) => (
             <ConnectionListItem
-              connectionId={user.connectionId}
-              name={user.name}
-              totalBalance={user.totalBalance}
+              connectionId={user().connectionId}
+              name={user().name}
+              totalBalance={user().totalBalance}
             />
           )}
         </For>

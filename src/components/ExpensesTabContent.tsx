@@ -1,4 +1,13 @@
-import { createSignal, For, Loading, Repeat, onSettled, Show } from "solid-js";
+import {
+  createMemo,
+  createSignal,
+  For,
+  Loading,
+  Repeat,
+  onSettled,
+  Show,
+  untrack,
+} from "solid-js";
 import type { Accessor } from "solid-js";
 import type { FunctionReturnType } from "convex/server";
 import Fuse from "fuse.js";
@@ -140,27 +149,38 @@ export function ConnectionExpenseList(props: {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const searchItemsResponse = () => {
-    const items = expensesQuery()?.items ?? [];
-    const currentUserId = me()._id;
-    const filter = payerFilter();
-    const payerFiltered =
-      filter === "mine"
+  const payerFiltered = createMemo(
+    () => {
+      const items = expensesQuery()?.items ?? [];
+      const currentUserId = me()._id;
+      const filter = payerFilter();
+      return filter === "mine"
         ? items.filter((item) => item.expense.paidBy === currentUserId)
         : filter === "theirs"
           ? items.filter((item) => item.expense.paidBy !== currentUserId)
           : items;
-
-    const term = searchTerm();
-    if (!term) return [...payerFiltered];
-
-    return new Fuse(payerFiltered, {
-      keys: ["expense.name", "expense.category"],
-      threshold: 0.3,
-    })
-      .search(term)
-      .map((result) => result.item);
-  };
+    },
+    { name: "payerFilteredExpenses" },
+  );
+  const searchIndex = createMemo(
+    () =>
+      new Fuse(payerFiltered(), {
+        keys: ["expense.name", "expense.category"],
+        threshold: 0.3,
+      }),
+    { name: "expenseSearchIndex" },
+  );
+  const searchItemsResponse = createMemo(
+    () => {
+      const term = searchTerm().trim();
+      return term
+        ? searchIndex()
+            .search(term)
+            .map((result) => result.item)
+        : payerFiltered();
+    },
+    { name: "visibleExpenses" },
+  );
 
   return (
     <>
@@ -198,10 +218,10 @@ export function ConnectionExpenseList(props: {
       <Separator class="my-4" />
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <For each={searchItemsResponse()}>
+        <For each={searchItemsResponse()} keyed={(item) => item.expense._id}>
           {(expenseItem) => (
             <SharedExpenseCard
-              item={expenseItem}
+              item={expenseItem()}
               connectionId={props.connectionId}
               otherUserId={() => expensesQuery()!.user._id}
             />
@@ -490,6 +510,15 @@ function EditExpenseDialog(
     onOpenChange: (open: boolean) => void;
   },
 ) {
+  // Capture the draft once when opening; live snapshots must not overwrite edits.
+  const initialValues = untrack(() => ({
+    name: props.name,
+    category: props.category ?? CATEGORY.None,
+    totalCost: props.originalTotalCost ?? props.totalCost,
+    currency: props.originalCurrency ?? props.currency,
+    paidBy: props.paidBy,
+    splitEqually: props.splitEqually,
+  }));
   const me = useCurrentUser();
   const { toast } = useToast();
   const formId = () => `edit-expense-form-${props.id}`;
@@ -558,14 +587,7 @@ function EditExpenseDialog(
         <Loading fallback={<LoadingFormComponent />}>
           <AddExpenseForm
             id={formId()}
-            initialValues={{
-              name: props.name,
-              category: props.category ?? CATEGORY.None,
-              totalCost: props.originalTotalCost ?? props.totalCost,
-              currency: props.originalCurrency ?? props.currency,
-              paidBy: props.paidBy,
-              splitEqually: props.splitEqually,
-            }}
+            initialValues={initialValues}
             onSubmit={handleSubmit}
             isNewExpense={false}
             currentUserId={me()._id}
