@@ -168,17 +168,6 @@ export function ConvexClerkAuth(props: ParentProps) {
     },
   );
 
-  onSettled(() => {
-    return () => {
-      client.setAuth(
-        async () => null,
-        () => {
-          setAuthenticated(false);
-        },
-      );
-    };
-  });
-
   return <>{props.children}</>;
 }
 

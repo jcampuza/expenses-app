@@ -2,9 +2,12 @@ import {
   createContext,
   createMemo,
   createSignal,
+  onCleanup,
+  Show,
   useContext,
   type Accessor,
   type ParentProps,
+  type Element,
 } from "solid-js";
 import { ConvexClient } from "convex/browser";
 import { getFunctionName } from "convex/server";
@@ -33,6 +36,35 @@ export function getConvexClient(): ConvexClient {
     throw new Error("Missing VITE_CONVEX_URL for Convex client");
   }
   return new ConvexClient(convexUrl);
+}
+
+/** Each session owns its socket, snapshots, and authenticated component state. */
+export function ConvexSessionProvider(props: {
+  sessionKey: string;
+  children: () => Element;
+  createClient?: () => ConvexClient;
+}) {
+  return Show({
+    get when() {
+      return props.sessionKey;
+    },
+    keyed: true,
+    children: (sessionKey: string) => {
+      // A one-argument callback selects Show's keyed render-function form.
+      void sessionKey;
+      const client = (props.createClient ?? getConvexClient)();
+      onCleanup(() => {
+        querySnapshots.delete(client);
+        void client.close();
+      });
+      return ConvexProvider({
+        client,
+        get children() {
+          return props.children();
+        },
+      });
+    },
+  });
 }
 
 export function ConvexProvider(
@@ -144,6 +176,7 @@ export function createQueryStream<Query extends FunctionReference<"query">>(
     query,
     args,
     (value) => {
+      if (closed) return;
       const next = value as FunctionReturnType<Query>;
       cache.set(cacheKey, next);
       if (pending) {
@@ -156,6 +189,7 @@ export function createQueryStream<Query extends FunctionReference<"query">>(
       values.push(next);
     },
     (error) => {
+      if (closed) return;
       failure = error;
       if (pendingError) {
         const reject = pendingError;

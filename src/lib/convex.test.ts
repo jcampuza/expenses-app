@@ -14,12 +14,14 @@ import { convexToJson, type Value } from "convex/values";
 import { api } from "../../convex/_generated/api";
 import {
   ConvexProvider,
+  ConvexSessionProvider,
   createAction,
   createMutation,
   createQueryFromClient,
   createQueryStream,
   useConvexAuth,
   useConvexAuthStatus,
+  useConvex,
 } from "./convex";
 
 type QueryRef = FunctionReference<"query">;
@@ -40,6 +42,12 @@ type Listener = {
 };
 
 class FakeConvexClient {
+  closed = false;
+  async close() {
+    this.closed = true;
+    this.listeners = [];
+    this.store.clear();
+  }
   listeners: Listener[] = [];
   mutations: Array<{ fn: unknown; args: unknown }> = [];
   actions: Array<{ fn: unknown; args: unknown }> = [];
@@ -582,6 +590,66 @@ describe("createQuery isolation", () => {
 });
 
 describe("ConvexProvider auth confirmation", () => {
+  it("replaces clients and cached state on account changes, but not token refreshes", async () => {
+    const clients: FakeConvexClient[] = [];
+    let setSession!: (key: string) => void;
+    let query!: () => unknown;
+    let mounts = 0;
+    const dispose = createRoot((disposeRoot) => {
+      const [session, set] = createSignal("account-a");
+      setSession = set;
+      const view = ConvexSessionProvider({
+        get sessionKey() {
+          return session();
+        },
+        createClient: () => {
+          const client = new FakeConvexClient();
+          clients.push(client);
+          return client as unknown as ConvexClient;
+        },
+        children: () => {
+          mounts++;
+          query = createQueryFromClient(useConvex(), otherQuery, {});
+          createEffect(
+            () => query(),
+            () => {},
+          );
+          return null;
+        },
+      });
+      createEffect(
+        () => {
+          let value: unknown = view;
+          while (typeof value === "function") value = value();
+          return value;
+        },
+        () => {},
+      );
+      return disposeRoot;
+    });
+    await tick();
+    clients[0]!.push(otherQuery, {}, { name: "Account A" });
+    expect(await waitForQuery(query)).toEqual({ name: "Account A" });
+    const lateCallback = clients[0]!.listeners[0]!.callback;
+    setSession("account-a");
+    await tick();
+    expect(mounts).toBe(1);
+    expect(clients[0]!.closed).toBe(false);
+    setSession("account-b");
+    await tick();
+    expect(mounts).toBe(2);
+    expect(clients[0]!.closed).toBe(true);
+    lateCallback({ name: "Late account A" });
+    expect(readQuery(query).ready).toBe(false);
+    clients[1]!.push(otherQuery, {}, { name: "Account B" });
+    expect(await waitForQuery(query)).toEqual({ name: "Account B" });
+    setSession("signed-out");
+    await tick();
+    expect(clients[1]!.closed).toBe(true);
+    expect(readQuery(query).ready).toBe(false);
+    dispose();
+    expect(clients[2]!.closed).toBe(true);
+  });
   it("is loading only until Convex confirms a token", () => {
     const client = new FakeConvexClient();
     const { result, dispose } = withConvex(client, () => ({
