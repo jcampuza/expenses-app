@@ -35,7 +35,12 @@ export function AddExpenseForm(props: {
   otherUserId: Id<"users">;
 }) {
   let isManualSelection = false;
-  let categorySelect: HTMLSelectElement | undefined;
+  const [name, setName] = createSignal(props.initialValues.name);
+  const [category, setCategory] = createSignal(props.initialValues.category);
+  const [paidBy, setPaidBy] = createSignal(props.initialValues.paidBy);
+  const [splitEqually, setSplitEqually] = createSignal(
+    props.initialValues.splitEqually,
+  );
   const [selectedCurrency, setSelectedCurrency] = createSignal(
     props.initialValues.currency,
   );
@@ -137,11 +142,12 @@ export function AddExpenseForm(props: {
           name="expense-name"
           type="text"
           required
-          value={props.initialValues.name}
+          value={name()}
           onInput={(event) => {
             const newName = event.currentTarget.value;
-            if (props.isNewExpense && categorySelect && newName.length >= 3) {
-              const currentCategory = categorySelect.value;
+            setName(newName);
+            if (props.isNewExpense && newName.length >= 3) {
+              const currentCategory = category();
               const shouldSuggest =
                 !isManualSelection ||
                 currentCategory === "None" ||
@@ -149,7 +155,7 @@ export function AddExpenseForm(props: {
               if (shouldSuggest) {
                 const suggestedCategory = suggestCategory(newName);
                 if (suggestedCategory) {
-                  categorySelect.value = suggestedCategory;
+                  setCategory(suggestedCategory);
                 }
               }
             }
@@ -164,7 +170,7 @@ export function AddExpenseForm(props: {
             id={`${props.id}-currency`}
             name="expense-currency"
             required
-            value={props.initialValues.currency}
+            value={selectedCurrency()}
             onChange={(event) => setSelectedCurrency(event.currentTarget.value)}
           >
             <For each={Array.from(currencies())}>
@@ -195,12 +201,10 @@ export function AddExpenseForm(props: {
           id={`${props.id}-category`}
           name="expense-category"
           required
-          value={props.initialValues.category}
-          ref={(el) => {
-            categorySelect = el;
-          }}
+          value={category()}
           onChange={(event) => {
             const selectedCategory = event.currentTarget.value;
+            setCategory(selectedCategory);
             isManualSelection = !(
               selectedCategory === "None" || !selectedCategory
             );
@@ -218,7 +222,10 @@ export function AddExpenseForm(props: {
           id={`${props.id}-paidBy`}
           name="expense-paidBy"
           required
-          value={props.initialValues.paidBy}
+          value={paidBy()}
+          onChange={(event) =>
+            setPaidBy(event.currentTarget.value as Id<"users">)
+          }
         >
           <option value={props.currentUserId}>You</option>
           <option value={props.otherUserId}>Them</option>
@@ -231,7 +238,10 @@ export function AddExpenseForm(props: {
           id={`${props.id}-splitEqually`}
           name="expense-splitEqually"
           required
-          value={props.initialValues.splitEqually ? "true" : "false"}
+          value={splitEqually() ? "true" : "false"}
+          onChange={(event) =>
+            setSplitEqually(event.currentTarget.value === "true")
+          }
         >
           <option value="true">Split Equally</option>
           <option value="false">One Person Pays All</option>
