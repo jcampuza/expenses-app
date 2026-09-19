@@ -1,17 +1,19 @@
 import {
   createContext,
-  createEffect,
+  createUniqueId,
   createSignal,
   Show,
   useContext,
   type Accessor,
   type ParentProps,
 } from "solid-js";
-import { Portal } from "@solidjs/web";
+import { Modal } from "./modal";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 type AlertCtx = {
+  titleId: string;
+  descriptionId: string;
   open: Accessor<boolean>;
   setOpen: (open: boolean) => void;
 };
@@ -24,6 +26,7 @@ export function AlertDialog(
     onOpenChange?: (open: boolean) => void;
   }>,
 ) {
+  const id = createUniqueId();
   const [uncontrolled, setUncontrolled] = createSignal(false);
   const isControlled = () => props.open !== undefined;
   const open = () => (isControlled() ? Boolean(props.open) : uncontrolled());
@@ -33,7 +36,14 @@ export function AlertDialog(
   };
 
   return (
-    <AlertDialogContext value={{ open, setOpen }}>
+    <AlertDialogContext
+      value={{
+        open,
+        setOpen,
+        titleId: `${id}-title`,
+        descriptionId: `${id}-description`,
+      }}
+    >
       {props.children}
     </AlertDialogContext>
   );
@@ -42,35 +52,20 @@ export function AlertDialog(
 export function AlertDialogContent(props: ParentProps<{ class?: string }>) {
   const dialog = useContext(AlertDialogContext);
 
-  createEffect(
-    () => dialog.open(),
-    (isOpen) => {
-      if (!isOpen) return;
-      const onKey = (event: KeyboardEvent) => {
-        if (event.key === "Escape") dialog.setOpen(false);
-      };
-      window.addEventListener("keydown", onKey);
-      return () => window.removeEventListener("keydown", onKey);
-    },
-  );
-
   return (
     <Show when={dialog.open()}>
-      <Portal>
-        <div class="fixed inset-0 z-50">
-          <div class="fixed inset-0 bg-black/80" />
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            class={cn(
-              "fixed top-[50%] left-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
-              props.class,
-            )}
-          >
-            {props.children}
-          </div>
-        </div>
-      </Portal>
+      <Modal
+        titleId={dialog.titleId}
+        descriptionId={dialog.descriptionId}
+        role="alertdialog"
+        onDismiss={() => dialog.setOpen(false)}
+        class={cn(
+          "inset-0 max-h-[85dvh] w-full max-w-lg rounded-lg p-6",
+          props.class,
+        )}
+      >
+        <div class="grid gap-4">{props.children}</div>
+      </Modal>
     </Show>
   );
 }
@@ -78,10 +73,7 @@ export function AlertDialogContent(props: ParentProps<{ class?: string }>) {
 export function AlertDialogHeader(props: ParentProps<{ class?: string }>) {
   return (
     <div
-      class={cn(
-        "flex flex-col space-y-2 text-center sm:text-left",
-        props.class,
-      )}
+      class={cn("flex flex-col gap-2 text-center sm:text-left", props.class)}
     >
       {props.children}
     </div>
@@ -92,7 +84,7 @@ export function AlertDialogFooter(props: ParentProps<{ class?: string }>) {
   return (
     <div
       class={cn(
-        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2",
         props.class,
       )}
     >
@@ -102,14 +94,21 @@ export function AlertDialogFooter(props: ParentProps<{ class?: string }>) {
 }
 
 export function AlertDialogTitle(props: ParentProps<{ class?: string }>) {
+  const dialog = useContext(AlertDialogContext);
   return (
-    <h2 class={cn("text-lg font-semibold", props.class)}>{props.children}</h2>
+    <h2 id={dialog.titleId} class={cn("text-lg font-semibold", props.class)}>
+      {props.children}
+    </h2>
   );
 }
 
 export function AlertDialogDescription(props: ParentProps<{ class?: string }>) {
+  const dialog = useContext(AlertDialogContext);
   return (
-    <p class={cn("text-sm text-muted-foreground", props.class)}>
+    <p
+      id={dialog.descriptionId}
+      class={cn("text-sm text-muted-foreground", props.class)}
+    >
       {props.children}
     </p>
   );

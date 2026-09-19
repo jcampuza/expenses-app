@@ -1,18 +1,20 @@
 import {
   createContext,
-  createEffect,
+  createUniqueId,
   createSignal,
   Show,
   useContext,
   type Accessor,
   type ParentProps,
 } from "solid-js";
-import { Portal } from "@solidjs/web";
+import { Modal } from "./modal";
 import { X } from "lucide";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/icons";
 
 type DialogCtx = {
+  titleId: string;
+  descriptionId: string;
   open: Accessor<boolean>;
   setOpen: (open: boolean) => void;
 };
@@ -25,6 +27,7 @@ export function Dialog(
     onOpenChange?: (open: boolean) => void;
   }>,
 ) {
+  const id = createUniqueId();
   const [uncontrolled, setUncontrolled] = createSignal(false);
   const isControlled = () => props.open !== undefined;
   const open = () => (isControlled() ? Boolean(props.open) : uncontrolled());
@@ -34,7 +37,16 @@ export function Dialog(
   };
 
   return (
-    <DialogContext value={{ open, setOpen }}>{props.children}</DialogContext>
+    <DialogContext
+      value={{
+        open,
+        setOpen,
+        titleId: `${id}-title`,
+        descriptionId: `${id}-description`,
+      }}
+    >
+      {props.children}
+    </DialogContext>
   );
 }
 
@@ -75,51 +87,28 @@ export function DialogClose(
 export function DialogContent(props: ParentProps<{ class?: string }>) {
   const dialog = useContext(DialogContext);
 
-  createEffect(
-    () => dialog.open(),
-    (isOpen) => {
-      if (!isOpen) return;
-      const onKey = (event: KeyboardEvent) => {
-        if (event.key === "Escape") dialog.setOpen(false);
-      };
-      window.addEventListener("keydown", onKey);
-      return () => window.removeEventListener("keydown", onKey);
-    },
-  );
-
   return (
     <Show when={dialog.open()}>
-      <Portal>
-        <div class="fixed inset-0 z-50">
-          <div
-            class="fixed inset-0 bg-black/80"
-            onClick={() => dialog.setOpen(false)}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            class={cn(
-              "fixed z-50 grid w-full gap-4 border bg-background shadow-lg",
-              "inset-0 h-full max-h-screen rounded-none p-4",
-              "sm:top-[50%] sm:left-[50%] sm:h-fit sm:max-h-[85vh] sm:w-full sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-6",
-              props.class,
-            )}
-          >
-            <div class="mt-8 h-full overflow-y-auto sm:h-auto sm:overflow-visible">
-              {props.children}
-            </div>
-            <button
-              type="button"
-              class="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
-              aria-label="Close"
-              onClick={() => dialog.setOpen(false)}
-            >
-              <Icon icon={X} class="h-6 w-6 sm:h-4 sm:w-4" />
-              <span class="sr-only">Close</span>
-            </button>
-          </div>
-        </div>
-      </Portal>
+      <Modal
+        titleId={dialog.titleId}
+        descriptionId={dialog.descriptionId}
+        onDismiss={() => dialog.setOpen(false)}
+        dismissOnBackdrop
+        class={cn(
+          "inset-0 h-dvh max-h-dvh w-screen max-w-none rounded-none p-4 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:rounded-lg sm:p-6",
+          props.class,
+        )}
+      >
+        <div class="mt-8 grid gap-4">{props.children}</div>
+        <button
+          type="button"
+          class="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
+          aria-label="Close"
+          onClick={() => dialog.setOpen(false)}
+        >
+          <Icon icon={X} class="size-6 sm:size-4" />
+        </button>
+      </Modal>
     </Show>
   );
 }
@@ -127,10 +116,7 @@ export function DialogContent(props: ParentProps<{ class?: string }>) {
 export function DialogHeader(props: ParentProps<{ class?: string }>) {
   return (
     <div
-      class={cn(
-        "flex flex-col space-y-1.5 text-center sm:text-left",
-        props.class,
-      )}
+      class={cn("flex flex-col gap-1.5 text-center sm:text-left", props.class)}
     >
       {props.children}
     </div>
@@ -141,7 +127,7 @@ export function DialogFooter(props: ParentProps<{ class?: string }>) {
   return (
     <div
       class={cn(
-        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2",
         props.class,
       )}
     >
@@ -151,8 +137,10 @@ export function DialogFooter(props: ParentProps<{ class?: string }>) {
 }
 
 export function DialogTitle(props: ParentProps<{ class?: string }>) {
+  const dialog = useContext(DialogContext);
   return (
     <h2
+      id={dialog.titleId}
       class={cn(
         "text-lg leading-none font-semibold tracking-tight",
         props.class,
@@ -164,8 +152,12 @@ export function DialogTitle(props: ParentProps<{ class?: string }>) {
 }
 
 export function DialogDescription(props: ParentProps<{ class?: string }>) {
+  const dialog = useContext(DialogContext);
   return (
-    <p class={cn("text-sm text-muted-foreground", props.class)}>
+    <p
+      id={dialog.descriptionId}
+      class={cn("text-sm text-muted-foreground", props.class)}
+    >
       {props.children}
     </p>
   );
