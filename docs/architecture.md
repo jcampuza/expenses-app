@@ -2,15 +2,29 @@
 
 ### Overview
 
-ExpenseMate is a Vite single-page app built with TanStack Router and a Convex backend. It lets authenticated users create “connections” (1:1 pairs), log shared expenses (optionally in foreign currencies), and see per-connection balances in USD. Authentication is handled by Clerk. Currency conversion is performed using daily exchange rates stored in Convex.
+ExpenseMate is a Vite single-page app built with Solid 2.0 and a Convex backend. It lets authenticated users create “connections” (1:1 pairs), log shared expenses (optionally in foreign currencies), and see per-connection balances in USD. Authentication is handled by Clerk. Currency conversion is performed using daily exchange rates stored in Convex.
 
 ### Tech Stack
 
-- **Frontend**: Vite, TanStack Router, React 19, TanStack Query 5, Tailwind CSS 4, Radix UI
-- **Auth**: Clerk
+- **Frontend**: Vite, Solid 2.0, `@solidjs/vite-plugin` (SPA start mode), `@solidjs/router` file routes, Tailwind CSS 4
+- **Auth**: Clerk 6 and its modular `@clerk/ui`, wrapped in `src/lib/clerk.tsx`. The `no-rhc` entry points omit unused Clerk billing and Coinbase integrations; authentication modals load their UI chunks on demand.
 - **Backend**: Convex (functions, database, crons)
-- **Data fetching**: `@convex-dev/react-query` integration with TanStack Query
+- **Data fetching**: `ConvexClient` from `convex/browser` plus a thin Solid 2 adapter in `src/lib/convex.ts`
 - **Language/Tooling**: TypeScript, ESLint, Prettier, Bun
+
+### Session and rendering boundaries
+
+`ConvexSessionProvider` owns one Convex client and component tree per Clerk session ID. Token refreshes retain that tree. Logout or switching sessions closes the old client and disposes its snapshots and form state. Query snapshot keys use Convex function names and serialized Convex values; a live `null` is authoritative.
+
+Expense lists key rows by expense ID. Search filtering and the Fuse index are memoized separately, and edit forms own their draft values so server updates cannot reset unsaved input. Dialogs use native `showModal()` for focus containment and background inertness.
+
+Run `bun run test:browser` after `bunx playwright install chromium` to check modal accessibility and draft preservation against fresh query snapshots. The isolated fixture uses a fake Convex client and needs no authentication credentials; it is not part of the production route tree. CI runs these tests as well as unit tests, lint, typecheck, and build.
+
+### Backend linting and scale
+
+Convex environment variables are declared in `convex/convex.config.ts` and read through the generated `env` export. Run `bunx convex codegen` after changing these declarations. Clerk's issuer URL is required; the FX key remains optional at deployment and is checked when the exchange-rate action runs.
+
+Type-aware Convex linting checks access control and flags new collection scans. Existing scans that produce complete financial balances or process all invitations have documented, local exceptions. Scaling them requires maintained balance aggregates and resumable invitation batches; replacing them with a truncated `take()` would change correctness. TypeScript remains on 5.9 because the installed typescript-eslint release does not support TypeScript 7.
 
 ### High-level Flow
 
@@ -35,14 +49,12 @@ convex/                 # Convex backend: schema, functions, crons, auth
   schema.ts             # Database tables and indexes
 
 src/
-  app/
-    _public/            # Public routes (home)
-    _authenticated/     # Authenticated routes (dashboard, settings)
-    __root.tsx          # Root route shell
+  App.tsx               # Providers, router, error boundary, toaster
+  Document.tsx          # HTML document shell for start-mode SPA
+  routes/               # File routes (landing, invite, authenticated app)
   components/           # UI components (Header, Footer, UI primitives)
-  hooks/                # React hooks (persist user, mutations, toasts)
-  lib/                  # Utilities and shared logic
-  main.tsx              # App bootstrap and providers
+  hooks/                # Client hooks (toasts, scroll direction)
+  lib/                  # Convex adapter, Clerk wrapper, persist-user, utilities
 ```
 
 ## Data Model (Convex)
@@ -108,28 +120,29 @@ Defined in `convex/crons.ts`:
 
 ### Routing and Layouts
 
-- File-based TanStack Router routes live under `src/app`.
-- Public routes live under `src/app/_public`; authenticated routes live under `src/app/_authenticated`.
-- Authenticated route rendering depends on Clerk auth state plus the user persistence flow in `src/hooks/use-persist-user.tsx`.
+- File routes live under `src/routes` and are served through `virtual:file-routes` + `@solidjs/router`.
+- `/` and `/invite/:token` are public. Authenticated pages nest under the pathless `(app)` layout.
+- Authenticated rendering waits on Clerk + Convex JWT auth, then the persist-user gate in `src/lib/persist-user.tsx`.
 
 ### Providers and Data Fetching
 
-- `src/main.tsx` wires up:
+- `src/App.tsx` wires up:
   - ClerkProvider (auth)
-  - Convex React client + `@convex-dev/react-query` bridge
-  - TanStack Query client using Convex queryFn/hashFn integration
-- Queries are invoked via `convexQuery(api.module.fn, args)` and `useQuery`/`useSuspenseQuery` from TanStack Query.
-- Mutations are called via a thin wrapper hook `src/hooks/use-convex-mutation.ts` which exposes `{ mutate, isPending, isSuccess, error }` and normalizes error handling.
+  - ConvexProvider (`ConvexClient`)
+  - ConvexClerkAuth (`setAuth` with the Clerk Convex JWT template)
+  - PersistGate (ensure a Convex user row exists)
+- Queries use `createQuery` (live `onUpdate` subscriptions) and render with `<Loading>` / `<Errored>` / `isPending`.
+- Mutations use `createMutation` plus `createPendingFn` for button pending/error/toast state.
 
 ### Key Screens
 
-- Dashboard (`src/app/_authenticated/dashboard`): Lists connected users and their `totalBalance` via `connections.getConnectedUsers`.
-- Connection detail (`src/app/_authenticated/dashboard/connection/$connectionId.tsx`): Shows shared expenses, search, and an Add Expense flow which calls `expenses.addExpense`.
-- Settings (`src/app/_authenticated/settings.tsx`): Invitation generation, management, expiration; list of connections.
+- Dashboard (`src/routes/(app)/dashboard`): Lists connected users and their `totalBalance` via `connections.getConnectedUsers`.
+- Connection detail (`src/routes/(app)/dashboard/connection/[connectionId].tsx`): Shows shared expenses, search, and an Add Expense flow which calls `expenses.addExpense`.
+- Settings (`src/routes/(app)/settings.tsx`): Invitation generation, management, expiration; list of connections.
 
 ## Authentication & Authorization
 
-- Clerk is initialized in the client via `src/main.tsx`.
+- Clerk is initialized in the client via `src/lib/clerk.tsx`.
 - Server-side Convex functions check `ctx.auth.getUserIdentity()`; helper `getMeDocument` fetches the corresponding `users` row and throws on missing identity.
 - Invitations and expense mutations validate that the current user belongs to the referenced connection.
 
@@ -138,13 +151,14 @@ Defined in `convex/crons.ts`:
 Set these environment variables (local and deployment):
 
 - `VITE_CONVEX_URL` – Convex deployment URL.
+- `VITE_CLERK_PUBLISHABLE_KEY` – Clerk publishable key.
 - `CLERK_DOMAIN` (or `VITE_CLERK_DOMAIN` for client) – Clerk frontend API domain (used by `convex/auth.config.ts`).
 - `FX_RATES_API_KEY` – API key for exchange rate provider.
 
 Build/Deploy:
 
-- Frontend builds run through `vite.config.ts`.
-- The static build output in `dist/` is hosted on Vercel.
+- Frontend builds run through `vite.config.ts` (`solid({ start: true })`).
+- The static build output in `dist/client` is hosted on Vercel.
 
 ## Scripts & Local Development
 
@@ -154,7 +168,8 @@ Build/Deploy:
 
 ## Testing
 
-- Example tests live in `src/lib/categories.test.ts`. Run with `bun test`.
+- Category suggestion tests live in `src/lib/categories.test.ts`.
+- Convex adapter tests live in `src/lib/convex.test.ts`. Run with `bun test`.
 
 ## Performance and Data Integrity Notes
 

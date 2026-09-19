@@ -1,6 +1,6 @@
 # ExpenseMate
 
-ExpenseMate is a Vite + TanStack Router single-page app that uses Clerk for authentication and Convex for backend data and realtime updates.
+ExpenseMate is a Vite + Solid 2.0 single-page app that uses Clerk for authentication and Convex for backend data and realtime updates.
 
 ## Requirements
 
@@ -106,12 +106,15 @@ Deployments are managed entirely from the Vercel dashboard:
 
 - production deploys come from `main`
 - every other branch and pull request gets a Vercel preview deployment
-- build command is `bun run build`, output directory is `dist/`
-- SPA fallback is handled by Vercel's Vite framework preset, so direct loads of TanStack Router routes like `/dashboard` work
+- build command is `bun run build`, output directory is `dist/client`
+- SPA fallback is handled by `vercel.json`, so direct loads of routes like `/dashboard` work
+- `vercel.json` also pins `framework` to `vite` so Vercel does not keep treating this as the previous TanStack Start app
+
+If an existing Vercel project still has a TanStack Start (or other SSR) framework preset, switch it to Vite or Other and set the output directory to `dist/client`. Preview deploys need the same `VITE_*` env vars as production.
 
 Set `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_FRONTEND_API_URL`, and `VITE_CONVEX_URL` per environment in the Vercel project settings. Do not put `CLERK_SECRET_KEY` in the frontend build environment.
 
-`.github/workflows/build.yml` runs lint, typecheck, format check, and build on pushes to `main` and pull requests. It does not deploy.
+`.github/workflows/build.yml` runs lint, typecheck, format check, tests, and build on pushes to `main` and pull requests. It does not deploy.
 
 ## Production Cutover Checklist
 
@@ -127,7 +130,7 @@ Before switching traffic to a new deployment, verify:
 
 ## Notes
 
-- This repository is a client-rendered TanStack Router app, not a TanStack Start app.
+- This repository is a client-rendered Solid 2.0 SPA, not a SolidStart SSR app.
 - The Vercel deployment only serves static assets and the SPA fallback; all backend logic lives in Convex.
 </content>
 </invoke>

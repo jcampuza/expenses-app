@@ -1,15 +1,17 @@
-"use client";
-
-import React, {
-  Suspense,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import {
+  createMemo,
+  createSignal,
+  For,
+  Loading,
+  Repeat,
+  onSettled,
+  Show,
+  untrack,
+} from "solid-js";
+import type { Accessor } from "solid-js";
+import type { FunctionReturnType } from "convex/server";
 import Fuse from "fuse.js";
-import { Plus } from "lucide-react";
+import { Plus } from "lucide";
 import ExpenseCard from "@/components/ExpenseCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +22,10 @@ import { CATEGORY } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
-import { useConvexMutation } from "@/hooks/use-convex-mutation";
+import { createMutation, createQuery } from "@/lib/convex";
+import { useCurrentUser } from "@/lib/current-user";
+import { createPendingFn } from "@/lib/pending";
 import { useToast } from "@/hooks/use-toast";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
 import { LoadingFormComponent } from "@/components/LoadingComponent";
 import {
   Dialog,
@@ -33,9 +35,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AddExpenseForm } from "./AddExpenseForm";
+import { AddExpenseForm, type ExpenseFormValue } from "./AddExpenseForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonCard } from "@/components/Skeletons";
+import { Icon } from "@/components/icons";
 
 const PAYER_FILTER_OPTIONS = [
   { value: "all", label: "All" },
@@ -44,34 +47,91 @@ const PAYER_FILTER_OPTIONS = [
 ] as const;
 
 type PayerFilter = (typeof PAYER_FILTER_OPTIONS)[number]["value"];
+type SharedExpenses = FunctionReturnType<typeof api.expenses.getSharedExpenses>;
+type SharedExpenseItem = SharedExpenses["items"][number];
 
-export function ConnectionExpenseList({
-  connectionId,
-}: {
+function PayerFilterButton(props: {
+  option: (typeof PAYER_FILTER_OPTIONS)[number];
+  payerFilter: Accessor<PayerFilter>;
+  onSelect: (value: PayerFilter) => void;
+}) {
+  const selected = () => props.payerFilter() === props.option.value;
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      aria-pressed={selected() ? "true" : "false"}
+      onClick={() => {
+        props.onSelect(props.option.value);
+      }}
+      class={cn(
+        "h-7 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
+        selected() && "bg-background text-foreground shadow-sm",
+      )}
+    >
+      {props.option.label}
+    </Button>
+  );
+}
+
+function SharedExpenseCard(props: {
+  item: SharedExpenseItem;
+  connectionId: Id<"user_connections">;
+  otherUserId: Accessor<Id<"users">>;
+}) {
+  const me = useCurrentUser();
+  const currentUserId = () => me()._id;
+  const currentUserExpense = () =>
+    props.item.userAExpense.userId === currentUserId()
+      ? props.item.userAExpense
+      : props.item.userBExpense;
+  const otherUserExpense = () =>
+    props.item.userAExpense.userId === currentUserId()
+      ? props.item.userBExpense
+      : props.item.userAExpense;
+  const splitEqually = () =>
+    currentUserExpense().amountOwed > 0 && otherUserExpense().amountOwed > 0;
+
+  return (
+    <EditExpenseDialogButton
+      otherUserId={props.otherUserId()}
+      connectionId={props.connectionId}
+      id={props.item.expense._id}
+      name={props.item.expense.name}
+      date={new Date(props.item.expense.date)}
+      updatedAt={props.item.expense.updatedAt}
+      category={props.item.expense.category ?? null}
+      totalCost={props.item.expense.totalCost}
+      currency={props.item.expense.currency}
+      originalCurrency={props.item.expense.originalCurrency}
+      originalTotalCost={props.item.expense.originalTotalCost}
+      balance={props.item.balance}
+      paidBy={props.item.expense.paidBy}
+      splitEqually={splitEqually()}
+    />
+  );
+}
+
+export function ConnectionExpenseList(props: {
   connectionId: Id<"user_connections">;
 }) {
-  const me = useSuspenseQuery(
-    convexQuery(api.user.getCurrentUserAuthenticated, {}),
-  );
-  const expensesQuery = useSuspenseQuery(
-    convexQuery(api.expenses.getSharedExpenses, {
-      connectionId: connectionId,
-    }),
-  );
+  const me = useCurrentUser();
+  const expensesQuery = createQuery(api.expenses.getSharedExpenses, () => ({
+    connectionId: props.connectionId,
+  }));
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [payerFilter, setPayerFilter] = useState<PayerFilter>("all");
-  const deferredSearchTerm = useDeferredValue(searchTerm);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchTerm, setSearchTerm] = createSignal("");
+  const [payerFilter, setPayerFilter] = createSignal<PayerFilter>("all");
+  let searchInput: HTMLInputElement | undefined;
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const isSlash = e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey;
-      if (!isSlash) {
-        return;
-      }
+  onSettled(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const isSlash =
+        event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (!isSlash) return;
 
-      const target = e.target;
+      const target = event.target;
       if (
         target instanceof HTMLElement &&
         target.closest(
@@ -81,178 +141,127 @@ export function ConnectionExpenseList({
         return;
       }
 
-      e.preventDefault();
-      searchInputRef.current?.focus();
+      event.preventDefault();
+      searchInput?.focus();
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  });
 
-  const payerFilteredItems = useMemo(() => {
-    const items = expensesQuery.data.items ?? [];
-
-    if (payerFilter === "mine") {
-      return items.filter((item) => item.expense.paidBy === me.data._id);
-    }
-
-    if (payerFilter === "theirs") {
-      return items.filter((item) => item.expense.paidBy !== me.data._id);
-    }
-
-    return items;
-  }, [expensesQuery.data.items, me.data._id, payerFilter]);
-
-  const fuseSearch = useMemo(() => {
-    return new Fuse(payerFilteredItems, {
-      keys: ["expense.name", "expense.category"],
-      threshold: 0.3,
-    });
-  }, [payerFilteredItems]);
-
-  const searchItemsResponse = useMemo(() => {
-    if (deferredSearchTerm) {
-      return fuseSearch.search(deferredSearchTerm).map((item) => item.item);
-    }
-
-    return payerFilteredItems;
-  }, [deferredSearchTerm, fuseSearch, payerFilteredItems]);
+  const payerFiltered = createMemo(
+    () => {
+      const items = expensesQuery()?.items ?? [];
+      const currentUserId = me()._id;
+      const filter = payerFilter();
+      return filter === "mine"
+        ? items.filter((item) => item.expense.paidBy === currentUserId)
+        : filter === "theirs"
+          ? items.filter((item) => item.expense.paidBy !== currentUserId)
+          : items;
+    },
+    { name: "payerFilteredExpenses" },
+  );
+  const searchIndex = createMemo(
+    () =>
+      new Fuse(payerFiltered(), {
+        keys: ["expense.name", "expense.category"],
+        threshold: 0.3,
+      }),
+    { name: "expenseSearchIndex" },
+  );
+  const searchItemsResponse = createMemo(
+    () => {
+      const term = searchTerm().trim();
+      return term
+        ? searchIndex()
+            .search(term)
+            .map((result) => result.item)
+        : payerFiltered();
+    },
+    { name: "visibleExpenses" },
+  );
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="relative min-w-0 flex-1">
           <Input
             type="text"
-            ref={searchInputRef}
+            ref={(el) => {
+              searchInput = el;
+            }}
             name="search"
-            value={searchTerm}
+            value={searchTerm()}
             placeholder="Search..."
             aria-label="Search expenses"
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onInput={(event) => setSearchTerm(event.currentTarget.value)}
           />
-          <kbd className="pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:block">
+          <kbd class="pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:block">
             /
           </kbd>
         </div>
 
-        <div className="grid grid-cols-3 rounded-md bg-muted p-1 text-muted-foreground sm:w-auto">
-          {PAYER_FILTER_OPTIONS.map((option) => {
-            const selected = payerFilter === option.value;
-
-            return (
-              <Button
-                key={option.value}
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-pressed={selected}
-                onClick={() => setPayerFilter(option.value)}
-                className={cn(
-                  "h-11 min-h-11 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
-                  selected && "bg-background text-foreground shadow-sm",
-                )}
-              >
-                {option.label}
-              </Button>
-            );
-          })}
+        <div class="grid grid-cols-3 rounded-md bg-muted p-1 text-muted-foreground sm:w-auto">
+          <For each={PAYER_FILTER_OPTIONS}>
+            {(option) => (
+              <PayerFilterButton
+                option={option}
+                payerFilter={payerFilter}
+                onSelect={setPayerFilter}
+              />
+            )}
+          </For>
         </div>
       </div>
 
-      <Separator className="my-4" />
+      <Separator class="my-4" />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {searchItemsResponse.map((expenseItem) => {
-          const currentUserExpense =
-            expenseItem.userAExpense.userId === me.data._id
-              ? expenseItem.userAExpense
-              : expenseItem.userBExpense;
-          const otherUserExpense =
-            expenseItem.userAExpense.userId === me.data._id
-              ? expenseItem.userBExpense
-              : expenseItem.userAExpense;
-          const splitEqually =
-            currentUserExpense.amountOwed > 0 &&
-            otherUserExpense.amountOwed > 0;
-
-          return (
-            <EditExpenseDialogButton
-              key={expenseItem.expense._id}
-              currentUserId={me.data._id}
-              otherUserId={expensesQuery.data.user._id}
-              connectionId={connectionId}
-              id={expenseItem.expense._id}
-              name={expenseItem.expense.name}
-              date={new Date(expenseItem.expense.date)}
-              updatedAt={expenseItem.expense.updatedAt}
-              category={expenseItem.expense.category ?? null}
-              totalCost={expenseItem.expense.totalCost}
-              currency={expenseItem.expense.currency}
-              originalCurrency={expenseItem.expense.originalCurrency}
-              originalTotalCost={expenseItem.expense.originalTotalCost}
-              balance={expenseItem.balance}
-              paidBy={expenseItem.expense.paidBy}
-              splitEqually={splitEqually}
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <For each={searchItemsResponse()} keyed={(item) => item.expense._id}>
+          {(expenseItem) => (
+            <SharedExpenseCard
+              item={expenseItem()}
+              connectionId={props.connectionId}
+              otherUserId={() => expensesQuery()!.user._id}
             />
-          );
-        })}
+          )}
+        </For>
       </div>
 
-      {searchItemsResponse.length === 0 && (
+      <Show when={searchItemsResponse().length === 0}>
         <div
           role="status"
-          className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground"
+          class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground"
         >
           No expenses match this view.
         </div>
-      )}
+      </Show>
 
-      <div className="fixed right-6 bottom-6 z-50 md:hidden">
-        <AddExpenseDialogButton connectionId={connectionId} variant="mobile" />
+      <div class="fixed right-6 bottom-6 z-50 md:hidden">
+        <AddExpenseDialogButton
+          connectionId={props.connectionId}
+          variant="mobile"
+        />
       </div>
     </>
   );
 }
 
-export function AddExpenseDialogButton({
-  connectionId,
-  variant = "mobile",
-}: {
+export function AddExpenseDialogButton(props: {
   connectionId: Id<"user_connections">;
   variant?: "desktop" | "mobile";
 }) {
-  const [open, setOpen] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [open, setOpen] = createSignal(false);
   const { toast } = useToast();
-  const addExpenseMutation = useConvexMutation(api.expenses.addExpense, {
-    onSuccess: () => {
-      setOpen(false);
-    },
-    onError: (message) => {
-      toast({
-        title: "Couldn't add expense",
-        description: message,
-        variant: "destructive",
-      });
-    },
-  });
+  const addExpense = createPendingFn(createMutation(api.expenses.addExpense));
 
   const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>,
-    values: {
-      name: string;
-      totalCost: number;
-      category: string;
-      currency: string;
-      paidBy: Id<"users">;
-      splitEqually: boolean;
-    },
-  ): Promise<void> => {
-    e.preventDefault();
-
-    await addExpenseMutation.mutate({
-      connectionId: connectionId,
+    _event: SubmitEvent,
+    values: ExpenseFormValue,
+  ) => {
+    const result = await addExpense.mutate({
+      connectionId: props.connectionId,
       paidBy: values.paidBy,
       splitEqually: values.splitEqually,
       name: values.name,
@@ -261,11 +270,22 @@ export function AddExpenseDialogButton({
       category: values.category,
       currency: values.currency,
     });
+    if (result.ok) {
+      setOpen(false);
+      return;
+    }
+    toast({
+      title: "Couldn't add expense",
+      description: addExpense.error() ?? "An unknown error occurred",
+      variant: "destructive",
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<ExpenseDialogButton variant={variant} />} />
+    <Dialog open={open()} onOpenChange={setOpen}>
+      <DialogTrigger>
+        <ExpenseDialogButton variant={props.variant ?? "mobile"} />
+      </DialogTrigger>
 
       <DialogContent>
         <VisuallyHidden>
@@ -274,132 +294,109 @@ export function AddExpenseDialogButton({
           </DialogHeader>
         </VisuallyHidden>
 
-        <Suspense fallback={<LoadingFormComponent />}>
+        <Loading fallback={<LoadingFormComponent />}>
           <ConnectionAddExpenseForm
-            connectionId={connectionId}
+            connectionId={props.connectionId}
             onSubmit={handleSubmit}
-            formRef={formRef}
           />
 
-          <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <DialogClose
-              render={
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  Cancel
-                </Button>
-              }
-            />
+          <div class="flex flex-col justify-end gap-3 sm:flex-row sm:gap-2">
+            <DialogClose>
+              <Button type="button" variant="outline" class="w-full sm:w-auto">
+                Cancel
+              </Button>
+            </DialogClose>
             <Button
               type="submit"
               form="add-expense-form"
-              disabled={addExpenseMutation.isPending}
+              disabled={addExpense.isPending()}
               variant="default"
-              className="w-full sm:w-auto"
+              class="w-full sm:w-auto"
             >
-              {addExpenseMutation.isPending ? "Submitting..." : "Add expense"}
+              {addExpense.isPending() ? "Submitting..." : "Add expense"}
             </Button>
           </div>
-        </Suspense>
+        </Loading>
       </DialogContent>
     </Dialog>
   );
 }
 
-function ConnectionAddExpenseForm({
-  connectionId,
-  onSubmit,
-  formRef,
-}: {
+function ConnectionAddExpenseForm(props: {
   connectionId: Id<"user_connections">;
-  onSubmit: React.ComponentProps<typeof AddExpenseForm>["onSubmit"];
-  formRef: React.Ref<HTMLFormElement>;
+  onSubmit: (event: SubmitEvent, value: ExpenseFormValue) => void;
 }) {
-  const me = useSuspenseQuery(
-    convexQuery(api.user.getCurrentUserAuthenticated, {}),
-  );
-  const expenses = useSuspenseQuery(
-    convexQuery(api.expenses.getSharedExpenses, { connectionId }),
-  );
+  const me = useCurrentUser();
+  const expenses = createQuery(api.expenses.getSharedExpenses, () => ({
+    connectionId: props.connectionId,
+  }));
 
   return (
-    <AddExpenseForm
-      id="add-expense-form"
-      initialValues={{
-        name: "",
-        category: CATEGORY.None,
-        totalCost: 0,
-        currency: "USD",
-        paidBy: me.data._id,
-        splitEqually: true,
-      }}
-      onSubmit={onSubmit}
-      ref={formRef}
-      isNewExpense={true}
-      currentUserId={me.data._id}
-      otherUserId={expenses.data.user._id}
-    />
+    <Show when={expenses()}>
+      {(shared) => (
+        <AddExpenseForm
+          id="add-expense-form"
+          initialValues={{
+            name: "",
+            category: CATEGORY.None,
+            totalCost: 0,
+            currency: "USD",
+            paidBy: me()._id,
+            splitEqually: true,
+          }}
+          onSubmit={props.onSubmit}
+          isNewExpense={true}
+          currentUserId={me()._id}
+          otherUserId={shared().user._id}
+        />
+      )}
+    </Show>
   );
 }
 
-function ExpenseDialogButton({
-  variant,
-  ...rest
-}: React.ComponentProps<"button"> & { variant: "desktop" | "mobile" }) {
+function ExpenseDialogButton(props: { variant: "desktop" | "mobile" }) {
   const { scrollDirection, isAtTop } = useScrollDirection();
-  const showText =
-    scrollDirection === "IDLE" ||
-    scrollDirection === "UP" ||
-    (scrollDirection === "DOWN" && isAtTop);
+  const showText = () =>
+    scrollDirection() === "IDLE" ||
+    scrollDirection() === "UP" ||
+    (scrollDirection() === "DOWN" && isAtTop());
 
-  return variant === "desktop" ? (
-    <Button {...rest}>Add Expense</Button>
-  ) : (
-    <Button
-      {...rest}
-      className={cn(
-        "h-12 rounded-full shadow-lg transition-[width,padding,box-shadow] duration-75 ease-out hover:shadow-xl motion-reduce:transition-none",
-        showText ? "w-36 px-4" : "w-12 px-0",
-      )}
-    >
-      <div className="flex items-center justify-center">
-        <Plus className="h-6 w-6 shrink-0" />
-        <span
-          className={cn(
-            "overflow-hidden whitespace-nowrap transition-[max-width,margin,opacity] duration-75 ease-in-out motion-reduce:transition-none",
-            showText
-              ? "ml-2 max-w-[200px] opacity-100"
-              : "ml-0 max-w-0 opacity-0",
+  return (
+    <Show
+      when={props.variant === "desktop"}
+      fallback={
+        <Button
+          class={cn(
+            "h-12 rounded-full shadow-lg transition-[width,padding,box-shadow] duration-75 ease-out hover:shadow-xl motion-reduce:transition-none",
+            showText() ? "w-36 px-4" : "w-12 px-0",
           )}
         >
-          Add Expense
-        </span>
-      </div>
-    </Button>
+          <div class="flex items-center justify-center">
+            <Icon icon={Plus} class="h-6 w-6 shrink-0" />
+            <span
+              class={cn(
+                "overflow-hidden whitespace-nowrap transition-[max-width,margin,opacity] duration-75 ease-in-out motion-reduce:transition-none",
+                showText()
+                  ? "ml-2 max-w-[200px] opacity-100"
+                  : "ml-0 max-w-0 opacity-0",
+              )}
+            >
+              Add Expense
+            </span>
+          </div>
+        </Button>
+      }
+    >
+      <Button>Add Expense</Button>
+    </Show>
   );
 }
 
-function ExpenseItem({
-  name,
-  date,
-  updatedAt,
-  category,
-  currentUserId,
-  paidBy,
-  splitEqually,
-  totalCost,
-  originalCurrency,
-  originalTotalCost,
-  balance,
-}: {
+function ExpenseItem(props: {
   name: string;
   date: Date;
   updatedAt?: string;
   category: string | null;
-  currentUserId: Id<"users">;
   paidBy: Id<"users">;
   splitEqually: boolean;
   totalCost: number;
@@ -407,20 +404,27 @@ function ExpenseItem({
   originalTotalCost?: number;
   balance: number;
 }) {
-  const details = getWhoPaidExpenseDetails(currentUserId, paidBy, splitEqually);
+  const me = useCurrentUser();
+  const details = () =>
+    getWhoPaidExpenseDetails(
+      me()._id,
+      props.paidBy,
+      props.splitEqually,
+      props.balance,
+    );
   return (
     <ExpenseCard
-      name={name}
-      date={date.toLocaleDateString()}
-      updatedAt={updatedAt}
-      category={category ?? CATEGORY.None}
-      amount={Math.abs(balance)}
-      totalCost={totalCost}
-      originalCurrency={originalCurrency}
-      originalTotalCost={originalTotalCost}
-      whoPaid={details.whoPaid}
-      whoOwes={details.whoOwes}
-      isSplitEqually={details.isSplitEqually}
+      name={props.name}
+      date={props.date.toLocaleDateString()}
+      updatedAt={props.updatedAt}
+      category={props.category ?? CATEGORY.None}
+      amount={Math.abs(props.balance)}
+      totalCost={props.totalCost}
+      originalCurrency={props.originalCurrency}
+      originalTotalCost={props.originalTotalCost}
+      whoPaid={details().whoPaid}
+      whoOwes={details().whoOwes}
+      isSplitEqually={details().isSplitEqually}
     />
   );
 }
@@ -429,6 +433,7 @@ function getWhoPaidExpenseDetails(
   currentUserId: Id<"users">,
   paidBy: Id<"users">,
   splitEqually: boolean,
+  balance: number,
 ): {
   whoPaid: "you" | "they";
   whoOwes: "you" | "they";
@@ -437,13 +442,22 @@ function getWhoPaidExpenseDetails(
   const currentUserPaid = paidBy === currentUserId;
   return {
     whoPaid: currentUserPaid ? "you" : "they",
-    whoOwes: currentUserPaid ? "they" : "you",
+    // Balance is computed server-side for the current user: positive means
+    // they owe you, negative means you owe them. Prefer it over paidBy so a
+    // briefly stale user id cannot invert the You owe / They owe tags.
+    whoOwes:
+      balance < 0
+        ? "you"
+        : balance > 0
+          ? "they"
+          : currentUserPaid
+            ? "they"
+            : "you",
     isSplitEqually: splitEqually,
   };
 }
 
 type EditExpenseDialogButtonProps = {
-  currentUserId: Id<"users">;
   otherUserId: Id<"users">;
   connectionId: Id<"user_connections">;
   id: Id<"expenses">;
@@ -461,13 +475,13 @@ type EditExpenseDialogButtonProps = {
 };
 
 function EditExpenseDialogButton(props: EditExpenseDialogButtonProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = createSignal(false);
 
   return (
     <>
       <button
         type="button"
-        className="w-full text-left"
+        class="w-full text-left"
         onClick={() => setOpen(true)}
       >
         <ExpenseItem
@@ -475,7 +489,6 @@ function EditExpenseDialogButton(props: EditExpenseDialogButtonProps) {
           date={props.date}
           updatedAt={props.updatedAt}
           category={props.category}
-          currentUserId={props.currentUserId}
           paidBy={props.paidBy}
           splitEqually={props.splitEqually}
           totalCost={props.totalCost}
@@ -484,93 +497,86 @@ function EditExpenseDialogButton(props: EditExpenseDialogButtonProps) {
           balance={props.balance}
         />
       </button>
-      {open ? (
-        <EditExpenseDialog {...props} open={open} onOpenChange={setOpen} />
-      ) : null}
+      <Show when={open()}>
+        <EditExpenseDialog {...props} open={open()} onOpenChange={setOpen} />
+      </Show>
     </>
   );
 }
 
-function EditExpenseDialog({
-  currentUserId,
-  otherUserId,
-  connectionId,
-  id,
-  name,
-  category,
-  totalCost,
-  currency,
-  originalCurrency,
-  originalTotalCost,
-  paidBy,
-  splitEqually,
-  open,
-  onOpenChange,
-}: EditExpenseDialogButtonProps & {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+function EditExpenseDialog(
+  props: EditExpenseDialogButtonProps & {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  },
+) {
+  // Capture the draft once when opening; live snapshots must not overwrite edits.
+  const initialValues = untrack(() => ({
+    name: props.name,
+    category: props.category ?? CATEGORY.None,
+    totalCost: props.originalTotalCost ?? props.totalCost,
+    currency: props.originalCurrency ?? props.currency,
+    paidBy: props.paidBy,
+    splitEqually: props.splitEqually,
+  }));
+  const me = useCurrentUser();
   const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
-  const formId = `edit-expense-form-${id}`;
-  const updateExpenseMutation = useConvexMutation(api.expenses.updateExpense, {
-    onSuccess: () => onOpenChange(false),
-    onError: (message) => {
-      toast({
-        title: "Couldn't save expense",
-        description: message,
-        variant: "destructive",
-      });
-    },
-  });
-  const deleteExpenseMutation = useConvexMutation(api.expenses.deleteExpense, {
-    onSuccess: () => onOpenChange(false),
-    onError: (message) => {
-      toast({
-        title: "Couldn't delete expense",
-        description: message,
-        variant: "destructive",
-      });
-    },
-  });
+  const formId = () => `edit-expense-form-${props.id}`;
+  const updateExpense = createPendingFn(
+    createMutation(api.expenses.updateExpense),
+  );
+  const deleteExpense = createPendingFn(
+    createMutation(api.expenses.deleteExpense),
+  );
 
   const handleDelete = () => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this expense?",
     );
     if (!confirmed) return;
-    deleteExpenseMutation.mutate({ id: id });
+    void (async () => {
+      const result = await deleteExpense.mutate({ id: props.id });
+      if (result.ok) {
+        props.onOpenChange(false);
+        return;
+      }
+      toast({
+        title: "Couldn't delete expense",
+        description: deleteExpense.error() ?? "An unknown error occurred",
+        variant: "destructive",
+      });
+    })();
   };
 
-  const actionIsInProgress =
-    updateExpenseMutation.isPending || deleteExpenseMutation.isPending;
+  const actionIsInProgress = () =>
+    updateExpense.isPending() || deleteExpense.isPending();
 
-  const handleSubmit = (
-    e: React.FormEvent<HTMLFormElement>,
-    value: {
-      name: string;
-      totalCost: number;
-      category: string;
-      currency: string;
-      paidBy: Id<"users">;
-      splitEqually: boolean;
-    },
-  ): void => {
-    e.preventDefault();
-    updateExpenseMutation.mutate({
-      connectionId: connectionId,
-      paidBy: value.paidBy,
-      splitEqually: value.splitEqually,
-      id: id,
-      name: value.name,
-      totalCost: value.totalCost,
-      category: value.category,
-      currency: value.currency,
-    });
+  const handleSubmit = (_event: SubmitEvent, value: ExpenseFormValue) => {
+    void (async () => {
+      const result = await updateExpense.mutate({
+        connectionId: props.connectionId,
+        paidBy: value.paidBy,
+        splitEqually: value.splitEqually,
+        id: props.id,
+        name: value.name,
+        totalCost: value.totalCost,
+        category: value.category,
+        currency: value.currency,
+      });
+      if (result.ok) {
+        props.onOpenChange(false);
+        return;
+      }
+      toast({
+        title: "Couldn't save expense",
+        description: updateExpense.error() ?? "An unknown error occurred",
+        variant: "destructive",
+      });
+    })();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent>
         <VisuallyHidden>
           <DialogHeader>
@@ -578,56 +584,46 @@ function EditExpenseDialog({
           </DialogHeader>
         </VisuallyHidden>
 
-        <Suspense fallback={<LoadingFormComponent />}>
+        <Loading fallback={<LoadingFormComponent />}>
           <AddExpenseForm
-            id={formId}
-            ref={formRef}
-            initialValues={{
-              name: name,
-              category: category ?? CATEGORY.None,
-              totalCost: originalTotalCost ?? totalCost,
-              currency: originalCurrency ?? currency,
-              paidBy: paidBy,
-              splitEqually: splitEqually,
-            }}
+            id={formId()}
+            initialValues={initialValues}
             onSubmit={handleSubmit}
             isNewExpense={false}
-            currentUserId={currentUserId}
-            otherUserId={otherUserId}
+            currentUserId={me()._id}
+            otherUserId={props.otherUserId}
           />
 
-          <div className="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <DialogClose
-              render={
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={actionIsInProgress}
-                  className="w-full sm:w-auto"
-                >
-                  Cancel
-                </Button>
-              }
-            />
+          <div class="flex flex-col justify-end gap-3 sm:flex-row sm:gap-2">
+            <DialogClose>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={actionIsInProgress()}
+                class="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+            </DialogClose>
             <Button
               variant="destructive"
               type="button"
               onClick={handleDelete}
-              disabled={actionIsInProgress}
-              className="w-full sm:w-auto"
+              disabled={actionIsInProgress()}
+              class="w-full sm:w-auto"
             >
-              {deleteExpenseMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteExpense.isPending() ? "Deleting..." : "Delete"}
             </Button>
             <Button
               type="submit"
-              form={formId}
-              disabled={actionIsInProgress}
-              className="w-full sm:w-auto"
+              form={formId()}
+              disabled={actionIsInProgress()}
+              class="w-full sm:w-auto"
             >
-              {updateExpenseMutation.isPending ? "Saving..." : "Save"}
+              {updateExpense.isPending() ? "Saving..." : "Save"}
             </Button>
           </div>
-        </Suspense>
+        </Loading>
       </DialogContent>
     </Dialog>
   );
@@ -636,12 +632,10 @@ function EditExpenseDialog({
 export function ConnectionExpenseListSkeleton() {
   return (
     <div>
-      <Skeleton className="h-9 w-full" />
-      <div className="my-4" />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, idx) => (
-          <SkeletonCard key={idx} />
-        ))}
+      <Skeleton class="h-9 w-full" />
+      <div class="my-4" />
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Repeat count={6}>{() => <SkeletonCard />}</Repeat>
       </div>
     </div>
   );

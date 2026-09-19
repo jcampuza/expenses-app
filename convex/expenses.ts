@@ -264,6 +264,8 @@ export const updateExpense = mutation({
       throw new Error("Expense not found");
     }
 
+    // Each expense has exactly two participant rows; validate the complete set below.
+    // eslint-disable-next-line @convex-dev/no-collect-in-query
     const existingUserExpenses = await ctx.db
       .query("user_expenses")
       .withIndex("by_expense", (q) => q.eq("expenseId", id))
@@ -379,6 +381,8 @@ export const deleteExpense = mutation({
       throw new Error("Expense not found");
     }
 
+    // Delete every participant row atomically, including any historical malformed rows.
+    // eslint-disable-next-line @convex-dev/no-collect-in-query
     const userExpenses = await ctx.db
       .query("user_expenses")
       .withIndex("by_expense", (q) => q.eq("expenseId", args.id))

@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, query } from "./_generated/server";
+import {
+  env,
+  internalAction,
+  internalMutation,
+  query,
+} from "./_generated/server";
 import { z } from "zod";
 import { internal } from "./_generated/api";
 
@@ -19,7 +24,7 @@ const SUPPORTED_CURRENCIES = ["ARS", "EUR", "GBP", "JPY", "MXN", "CAD", "CNY"];
 
 const fetchExchangeRates = async (): Promise<ExchangeRatesResponse> => {
   console.info("fetchExchangeRates start");
-  if (!process.env.FX_RATES_API_KEY) {
+  if (!env.FX_RATES_API_KEY) {
     throw new Error("FX_RATES_API_KEY environment variable is not set");
   }
 
@@ -30,7 +35,7 @@ const fetchExchangeRates = async (): Promise<ExchangeRatesResponse> => {
     amount: "1",
     places: "6",
     format: "json",
-    api_key: process.env.FX_RATES_API_KEY,
+    api_key: env.FX_RATES_API_KEY,
   });
 
   const response = await fetch(
@@ -133,6 +138,8 @@ export const fetchAndStoreExchangeRates = internalAction({
   },
 });
 
+// Public exchange-rate data contains no account information.
+// eslint-disable-next-line @convex-dev/require-access-control
 export const getLatestExchangeRate = query({
   args: { currency: v.string() },
   handler: async (ctx, { currency }) => {
@@ -150,6 +157,8 @@ export const getLatestExchangeRate = query({
 });
 
 // Get all supported currencies
+// Public currency metadata is needed before user persistence completes.
+// eslint-disable-next-line @convex-dev/require-access-control
 export const getSupportedCurrencies = query({
   args: {},
   handler: async (ctx) => {

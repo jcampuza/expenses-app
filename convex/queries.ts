@@ -31,11 +31,17 @@ export async function getUsersConnections(
   userId: Id<"users">,
 ) {
   const [invitedByMe, invitedMe] = await Promise.all([
+    // The dashboard computes complete balances; truncation would silently hide debts.
+    // TODO: paginate connections alongside a server-maintained balance aggregate.
+    // eslint-disable-next-line @convex-dev/no-collect-in-query
     convex.db
       .query("user_connections")
       .withIndex("by_inviter_and_invitee", (q) => q.eq("inviterUserId", userId))
       .collect(),
 
+    // The dashboard computes complete balances; truncation would silently hide debts.
+    // TODO: paginate connections alongside a server-maintained balance aggregate.
+    // eslint-disable-next-line @convex-dev/no-collect-in-query
     convex.db
       .query("user_connections")
       .withIndex("by_invitee", (q) => q.eq("inviteeUserId", userId))
@@ -55,6 +61,8 @@ export async function getUserExpenseRows(
   convex: QueryCtx,
   userId: Id<"users">,
 ) {
+  // Exact balances require all ledger rows until a maintained aggregate replaces this scan.
+  // eslint-disable-next-line @convex-dev/no-collect-in-query
   return await convex.db
     .query("user_expenses")
     .withIndex("by_user", (q) => q.eq("userId", userId))

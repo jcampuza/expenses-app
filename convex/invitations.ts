@@ -70,6 +70,9 @@ export const expireAllInvitations = mutation({
   handler: async (ctx) => {
     const me = await getMeDocument(ctx);
 
+    // This operation promises to process all matching invitations atomically.
+    // TODO: migrate to resumable batches before scaling invitation volume.
+    // eslint-disable-next-line @convex-dev/no-collect-in-query
     const invitations = await ctx.db
       .query("invitations")
       .withIndex("by_inviter_user_id", (q) => q.eq("inviterUserId", me._id))
@@ -230,6 +233,9 @@ export const acceptInvitation = mutation({
 export const deleteExpiredInvitations = internalMutation({
   args: {},
   handler: async (ctx) => {
+    // This operation promises to process all matching invitations atomically.
+    // TODO: migrate to resumable batches before scaling invitation volume.
+    // eslint-disable-next-line @convex-dev/no-collect-in-query
     const invitations = await ctx.db
       .query("invitations")
       .withIndex("by_creation_time", (q) =>

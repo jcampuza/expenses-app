@@ -2,11 +2,19 @@ import { getUserExpenseRows } from "./queries";
 import { Id } from "./_generated/dataModel";
 import { QueryCtx } from "./_generated/server";
 
-export const getMeDocument = async (ctx: QueryCtx) => {
+export const requireIdentity = async (
+  ctx: QueryCtx,
+  message = "Not authenticated",
+) => {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new Error(message);
   }
+  return identity;
+};
+
+export const getMeDocument = async (ctx: QueryCtx) => {
+  const identity = await requireIdentity(ctx);
 
   const me = await ctx.db
     .query("users")

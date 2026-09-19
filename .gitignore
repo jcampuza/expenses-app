@@ -46,3 +46,6 @@ dist/
 
 # tanstack
 .tanstack/
+# browser tests
+/test-results/
+/playwright-report/

@@ -18,7 +18,7 @@ bun run start
 ## Directory
 
 - `convex/` - Convex api/dabatase
-- `src/` - Tanstack Router application
+- `src/` - Solid 2.0 SPA (`src/routes` file routes)
 
 <!-- convex-ai-start -->
 

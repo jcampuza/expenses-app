@@ -11,7 +11,8 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
     "incremental": true,
     "types": ["vite/client", "bun-types"],
     "paths": {
@@ -27,7 +28,8 @@
     "postcss.config.*",
     "tailwind.config.*",
     "eslint.config.mjs",
-    "src/routeTree.gen.ts"
+    "tests",
+    "playwright.config.ts"
   ],
-  "exclude": ["node_modules", ".next", ".output"]
+  "exclude": ["node_modules", ".next", ".output", "dist"]
 }

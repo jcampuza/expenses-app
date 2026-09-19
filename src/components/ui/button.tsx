@@ -1,7 +1,6 @@
-import * as React from "react";
-import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { omit } from "solid-js";
 import { cva, type VariantProps } from "class-variance-authority";
-
+import type { JSX } from "@solidjs/web";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -16,7 +15,7 @@ const buttonVariants = cva(
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -34,18 +33,23 @@ const buttonVariants = cva(
   },
 );
 
-export interface ButtonProps
-  extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {}
+export type ButtonProps = JSX.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants>;
 
-const Button = React.forwardRef<HTMLElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => (
-    <ButtonPrimitive
-      ref={ref}
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+export function Button(props: ButtonProps) {
+  const rest = omit(props, "variant", "size", "class");
+  return (
+    <button
+      {...rest}
+      class={cn(
+        buttonVariants({
+          variant: props.variant,
+          size: props.size,
+          className: props.class,
+        }),
+      )}
     />
-  ),
-);
-Button.displayName = "Button";
+  );
+}
 
-export { Button, buttonVariants };
+export { buttonVariants };
