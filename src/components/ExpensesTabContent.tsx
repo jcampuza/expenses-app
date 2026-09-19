@@ -66,7 +66,7 @@ function PayerFilterButton(props: {
         props.onSelect(props.option.value);
       }}
       class={cn(
-        "h-11 min-h-11 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
+        "h-7 rounded-sm px-3 shadow-none hover:bg-background/80 hover:text-foreground",
         selected() && "bg-background text-foreground shadow-sm",
       )}
     >
@@ -300,7 +300,7 @@ export function AddExpenseDialogButton(props: {
             onSubmit={handleSubmit}
           />
 
-          <div class="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
+          <div class="flex flex-col justify-end gap-3 sm:flex-row sm:gap-2">
             <DialogClose>
               <Button type="button" variant="outline" class="w-full sm:w-auto">
                 Cancel
@@ -594,7 +594,7 @@ function EditExpenseDialog(
             otherUserId={props.otherUserId}
           />
 
-          <div class="mt-6 flex flex-col justify-end space-y-3 sm:mt-4 sm:flex-row sm:space-y-0 sm:space-x-2">
+          <div class="flex flex-col justify-end gap-3 sm:flex-row sm:gap-2">
             <DialogClose>
               <Button
                 type="button"

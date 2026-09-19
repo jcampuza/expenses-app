@@ -95,7 +95,7 @@ export function DialogContent(props: ParentProps<{ class?: string }>) {
         onDismiss={() => dialog.setOpen(false)}
         dismissOnBackdrop
         class={cn(
-          "inset-0 h-dvh max-h-dvh w-screen max-w-none rounded-none p-4 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:rounded-lg sm:p-6",
+          "inset-0 h-dvh max-h-dvh w-screen max-w-none rounded-none p-4 sm:h-fit sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:rounded-lg sm:p-6",
           props.class,
         )}
       >
@@ -127,7 +127,7 @@ export function DialogFooter(props: ParentProps<{ class?: string }>) {
   return (
     <div
       class={cn(
-        "flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2",
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
         props.class,
       )}
     >
