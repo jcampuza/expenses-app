@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, query } from "./_generated/server";
+import {
+  env,
+  internalAction,
+  internalMutation,
+  query,
+} from "./_generated/server";
 import { z } from "zod";
 import { internal } from "./_generated/api";
 
@@ -19,7 +24,7 @@ const SUPPORTED_CURRENCIES = ["ARS", "EUR", "GBP", "JPY", "MXN", "CAD", "CNY"];
 
 const fetchExchangeRates = async (): Promise<ExchangeRatesResponse> => {
   console.info("fetchExchangeRates start");
-  if (!process.env.FX_RATES_API_KEY) {
+  if (!env.FX_RATES_API_KEY) {
     throw new Error("FX_RATES_API_KEY environment variable is not set");
   }
 
@@ -30,7 +35,7 @@ const fetchExchangeRates = async (): Promise<ExchangeRatesResponse> => {
     amount: "1",
     places: "6",
     format: "json",
-    api_key: process.env.FX_RATES_API_KEY,
+    api_key: env.FX_RATES_API_KEY,
   });
 
   const response = await fetch(

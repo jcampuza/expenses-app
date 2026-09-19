@@ -6,21 +6,11 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    ignores: [
-      "convex/_generated/**",
-      "dist",
-      ".output",
-      "file-routes.d.ts",
-    ],
+    ignores: ["convex/_generated/**", "dist", ".output", "file-routes.d.ts"],
   },
   {
     files: ["src/**/*.{ts,tsx,js,jsx}"],
     ...solid,
-    rules: {
-      ...solid.rules,
-      // Solid 2 exports JSX types from `@solidjs/web`, not `solid-js`.
-      "solid/imports": "off",
-    },
   },
   {
     files: ["**/*.{ts,tsx,js,jsx,mts,cts}"],
@@ -66,4 +56,10 @@ export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...convexPlugin.configs.recommended,
+  {
+    files: ["convex/**/*.ts"],
+    languageOptions: {
+      parserOptions: { projectService: true },
+    },
+  },
 ]);
