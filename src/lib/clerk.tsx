@@ -8,7 +8,10 @@ import {
   type Accessor,
   type ParentProps,
 } from "solid-js";
-import { Clerk } from "@clerk/clerk-js";
+// This app uses account authentication, not Clerk billing or Coinbase wallets.
+// The no-RHC entry omits those SDKs; prebuilt auth UI still loads in lazy chunks.
+import { Clerk } from "@clerk/clerk-js/no-rhc";
+import { ui } from "@clerk/ui/no-rhc";
 import type {
   SignedInSessionResource,
   UserResource,
@@ -30,6 +33,7 @@ const ClerkContext = createContext<{
 export function ClerkProvider(props: ParentProps) {
   const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
   const clerk = new Clerk(publishableKey);
+  const [loadFailed, setLoadFailed] = createSignal(false);
   const [state, setState] = createSignal<ClerkState>({
     loaded: false,
     user: null,
@@ -58,14 +62,22 @@ export function ClerkProvider(props: ParentProps) {
     }
 
     let unsubscribe: (() => void) | undefined;
-    void clerk.load().then(() => {
-      unsubscribe = clerk.addListener(() => {
+    let disposed = false;
+    void clerk
+      .load({ ui })
+      .then(() => {
+        if (disposed) return;
+        unsubscribe = clerk.addListener(() => {
+          sync();
+        });
         sync();
+      })
+      .catch(() => {
+        if (!disposed) setLoadFailed(true);
       });
-      sync();
-    });
 
     return () => {
+      disposed = true;
       unsubscribe?.();
     };
   });
@@ -81,7 +93,23 @@ export function ClerkProvider(props: ParentProps) {
         when={state().loaded}
         fallback={
           <div class="relative container mx-auto flex grow flex-col items-center p-12">
-            <div class="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <Show
+              when={loadFailed()}
+              fallback={
+                <div class="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              }
+            >
+              <p role="alert">
+                We couldn't load sign-in. Please reload and try again.
+              </p>
+              <button
+                type="button"
+                class="mt-4 underline"
+                onClick={() => window.location.reload()}
+              >
+                Reload
+              </button>
+            </Show>
           </div>
         }
       >

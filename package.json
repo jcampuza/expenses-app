@@ -19,7 +19,9 @@
     "test:browser": "playwright test"
   },
   "dependencies": {
-    "@clerk/clerk-js": "5.128.0",
+    "@clerk/clerk-js": "6.32.1",
+    "@clerk/shared": "^4.33.0",
+    "@clerk/ui": "^1.33.1",
     "@solidjs/router": "2.0.0-next.26",
     "@solidjs/web": "2.0.0-rc.9",
     "class-variance-authority": "^0.7.1",
