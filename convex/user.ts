@@ -1,3 +1,4 @@
+import { requireIdentity } from "./helpers";
 import { v } from "convex/values";
 import { Doc } from "./_generated/dataModel";
 import { mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
@@ -26,10 +27,10 @@ export const persist = mutation({
     ),
   },
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Called storeUser without authentication present");
-    }
+    const identity = await requireIdentity(
+      ctx,
+      "Called storeUser without authentication present",
+    );
 
     const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 
@@ -76,12 +77,10 @@ export const persist = mutation({
 export const getCurrentUserForPersistence = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error(
-        "Called getCurrentUserForPersistence without authentication present",
-      );
-    }
+    const identity = await requireIdentity(
+      ctx,
+      "Called getCurrentUserForPersistence without authentication present",
+    );
 
     const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 
@@ -95,10 +94,7 @@ export const getCurrentUserForPersistence = query({
 export const getCurrentUserAuthenticated = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    const identity = await requireIdentity(ctx, "Not authenticated");
 
     const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 
@@ -114,10 +110,10 @@ export const getCurrentUserAuthenticated = query({
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Called getCurrentUser without authentication present");
-    }
+    const identity = await requireIdentity(
+      ctx,
+      "Called getCurrentUser without authentication present",
+    );
 
     const user = await getUserByTokenIdentifier(ctx, identity.tokenIdentifier);
 

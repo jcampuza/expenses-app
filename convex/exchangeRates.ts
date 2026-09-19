@@ -138,6 +138,8 @@ export const fetchAndStoreExchangeRates = internalAction({
   },
 });
 
+// Public exchange-rate data contains no account information.
+// eslint-disable-next-line @convex-dev/require-access-control
 export const getLatestExchangeRate = query({
   args: { currency: v.string() },
   handler: async (ctx, { currency }) => {
@@ -155,6 +157,8 @@ export const getLatestExchangeRate = query({
 });
 
 // Get all supported currencies
+// Public currency metadata is needed before user persistence completes.
+// eslint-disable-next-line @convex-dev/require-access-control
 export const getSupportedCurrencies = query({
   args: {},
   handler: async (ctx) => {

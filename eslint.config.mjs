@@ -61,5 +61,14 @@ export default defineConfig([
     languageOptions: {
       parserOptions: { projectService: true },
     },
+    rules: {
+      "@convex-dev/no-collect-in-query": "error",
+      "@convex-dev/require-access-control": [
+        "error",
+        {
+          pattern: "^(require|assert|check|ensure|can|has|getMeDocument)",
+        },
+      ],
+    },
   },
 ]);
