@@ -7,6 +7,8 @@ import {
   type ParentProps,
 } from "solid-js";
 import { ConvexClient } from "convex/browser";
+import { getFunctionName } from "convex/server";
+import { convexToJson, type Value } from "convex/values";
 import type {
   FunctionArgs,
   FunctionReference,
@@ -87,8 +89,11 @@ export function useConvexAuthStatus() {
 
 const querySnapshots = new WeakMap<ConvexClient, Map<string, unknown>>();
 
-function queryCacheKey(query: unknown, args: unknown) {
-  return JSON.stringify([query, args]);
+function queryCacheKey(
+  query: FunctionReference<"query">,
+  args: Record<string, Value>,
+) {
+  return JSON.stringify([getFunctionName(query), convexToJson(args)]);
 }
 
 function snapshotCache(client: ConvexClient) {

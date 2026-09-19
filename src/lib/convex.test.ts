@@ -9,6 +9,9 @@ import {
 } from "solid-js";
 import type { ConvexClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
+import { getFunctionName, makeFunctionReference } from "convex/server";
+import { convexToJson, type Value } from "convex/values";
+import { api } from "../../convex/_generated/api";
 import {
   ConvexProvider,
   createAction,
@@ -23,8 +26,8 @@ type QueryRef = FunctionReference<"query">;
 type MutationRef = FunctionReference<"mutation">;
 type ActionRef = FunctionReference<"action">;
 
-const listQuery = { name: "list" } as unknown as QueryRef;
-const otherQuery = { name: "other" } as unknown as QueryRef;
+const listQuery = api.connections.getConnectedUsers as QueryRef;
+const otherQuery = api.user.getCurrentUserAuthenticated as QueryRef;
 const saveMutation = { name: "save" } as unknown as MutationRef;
 const runAction = { name: "run" } as unknown as ActionRef;
 
@@ -44,7 +47,10 @@ class FakeConvexClient {
   dropStoreOnUnsubscribe = false;
 
   private key(query: unknown, args: unknown) {
-    return JSON.stringify([query, args]);
+    return JSON.stringify([
+      getFunctionName(query as QueryRef),
+      convexToJson(args as Value),
+    ]);
   }
 
   seed(query: unknown, args: unknown, value: unknown) {
@@ -80,10 +86,7 @@ class FakeConvexClient {
   push(query: unknown, args: unknown, value: unknown) {
     this.store.set(this.key(query, args), value);
     for (const listener of this.listeners) {
-      if (
-        listener.query === query &&
-        JSON.stringify(listener.args) === JSON.stringify(args)
-      ) {
+      if (this.key(listener.query, listener.args) === this.key(query, args)) {
         listener.current = value;
         listener.callback(value);
       }
@@ -92,10 +95,7 @@ class FakeConvexClient {
 
   error(query: unknown, args: unknown, error: Error) {
     for (const listener of this.listeners) {
-      if (
-        listener.query === query &&
-        JSON.stringify(listener.args) === JSON.stringify(args)
-      ) {
+      if (this.key(listener.query, listener.args) === this.key(query, args)) {
         listener.onError?.(error);
       }
     }
@@ -472,6 +472,54 @@ describe("createMutation and createAction", () => {
 });
 
 describe("createQuery isolation", () => {
+  it("does not replay another generated query's snapshot on mount", async () => {
+    const client = new FakeConvexClient();
+    client.dropStoreOnUnsubscribe = true;
+    const first = createQueryStream(
+      client as unknown as ConvexClient,
+      listQuery,
+      {},
+    )[Symbol.asyncIterator]();
+    client.push(listQuery, {}, ["connection"]);
+    await first.next();
+    await first.return?.();
+    const second = createQueryStream(
+      client as unknown as ConvexClient,
+      otherQuery,
+      {},
+    )[Symbol.asyncIterator]();
+    let resolved = false;
+    const pending = second.next().then((value) => {
+      resolved = true;
+      return value;
+    });
+    await tick();
+    expect(resolved).toBe(false);
+    client.push(otherQuery, {}, { name: "Correct user" });
+    expect((await pending).value).toEqual({ name: "Correct user" });
+    await second.return?.();
+  });
+
+  it("replays equivalent args containing Convex values independent of property order", async () => {
+    const client = new FakeConvexClient();
+    client.dropStoreOnUnsubscribe = true;
+    const query = makeFunctionReference<"query">("test:values");
+    const args = { amount: 1n, bytes: new Uint8Array([1, 2]).buffer };
+    const first = createQueryStream(
+      client as unknown as ConvexClient,
+      query,
+      args,
+    )[Symbol.asyncIterator]();
+    client.push(query, args, "cached");
+    await first.next();
+    await first.return?.();
+    const second = createQueryStream(client as unknown as ConvexClient, query, {
+      bytes: args.bytes,
+      amount: args.amount,
+    })[Symbol.asyncIterator]();
+    expect((await second.next()).value).toBe("cached");
+    await second.return?.();
+  });
   it("does not mix results across different query references", async () => {
     const client = new FakeConvexClient();
     let first!: () => unknown;
