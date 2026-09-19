@@ -7,10 +7,24 @@ ExpenseMate is a Vite single-page app built with Solid 2.0 and a Convex backend.
 ### Tech Stack
 
 - **Frontend**: Vite, Solid 2.0, `@solidjs/vite-plugin` (SPA start mode), `@solidjs/router` file routes, Tailwind CSS 4
-- **Auth**: Clerk JS SDK (`@clerk/clerk-js`) wrapped in `src/lib/clerk.tsx`
+- **Auth**: Clerk 6 and its modular `@clerk/ui`, wrapped in `src/lib/clerk.tsx`. The `no-rhc` entry points omit unused Clerk billing and Coinbase integrations; authentication modals load their UI chunks on demand.
 - **Backend**: Convex (functions, database, crons)
 - **Data fetching**: `ConvexClient` from `convex/browser` plus a thin Solid 2 adapter in `src/lib/convex.ts`
 - **Language/Tooling**: TypeScript, ESLint, Prettier, Bun
+
+### Session and rendering boundaries
+
+`ConvexSessionProvider` owns one Convex client and component tree per Clerk session ID. Token refreshes retain that tree. Logout or switching sessions closes the old client and disposes its snapshots and form state. Query snapshot keys use Convex function names and serialized Convex values; a live `null` is authoritative.
+
+Expense lists key rows by expense ID. Search filtering and the Fuse index are memoized separately, and edit forms own their draft values so server updates cannot reset unsaved input. Dialogs use native `showModal()` for focus containment and background inertness.
+
+Run `bun run test:browser` after `bunx playwright install chromium` to check modal accessibility and draft preservation against fresh query snapshots. The isolated fixture uses a fake Convex client and needs no authentication credentials; it is not part of the production route tree. CI runs these tests as well as unit tests, lint, typecheck, and build.
+
+### Backend linting and scale
+
+Convex environment variables are declared in `convex/convex.config.ts` and read through the generated `env` export. Run `bunx convex codegen` after changing these declarations. Clerk's issuer URL is required; the FX key remains optional at deployment and is checked when the exchange-rate action runs.
+
+Type-aware Convex linting checks access control and flags new collection scans. Existing scans that produce complete financial balances or process all invitations have documented, local exceptions. Scaling them requires maintained balance aggregates and resumable invitation batches; replacing them with a truncated `take()` would change correctness. TypeScript remains on 5.9 because the installed typescript-eslint release does not support TypeScript 7.
 
 ### High-level Flow
 
