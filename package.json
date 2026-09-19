@@ -15,7 +15,8 @@
     "dev": "bun run scripts/dev.ts",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache"
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@clerk/clerk-js": "5.128.0",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@convex-dev/eslint-plugin": "5.0.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@solidjs/vite-plugin": "3.0.0-next.44",
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
