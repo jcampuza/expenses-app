@@ -1,8 +1,12 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/browser",
   testMatch: "**/*.e2e.ts",
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "iphone-webkit", use: { ...devices["iPhone 13"] } },
+  ],
   use: { baseURL: "http://127.0.0.1:3180", trace: "retain-on-failure" },
   webServer: {
     command:

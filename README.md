@@ -102,7 +102,7 @@ bun run start
 
 The app deploys to Vercel as a static SPA. Clerk and Convex remain external services.
 
-Deployments are managed entirely from the Vercel dashboard:
+Frontend deployments are managed from the Vercel dashboard:
 
 - production deploys come from `main`
 - every other branch and pull request gets a Vercel preview deployment
@@ -115,6 +115,8 @@ If an existing Vercel project still has a TanStack Start (or other SSR) framewor
 Set `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_FRONTEND_API_URL`, and `VITE_CONVEX_URL` per environment in the Vercel project settings. Do not put `CLERK_SECRET_KEY` in the frontend build environment.
 
 `.github/workflows/build.yml` runs lint, typecheck, format check, tests, and build on pushes to `main` and pull requests. It does not deploy.
+
+Convex functions also need a deployment, either through a Vercel integration or `bunx convex deploy`. The checked-in Vercel build command, `bun run build`, only builds the frontend; verify the effective production build logs include a Convex deployment when backend changes are required. Deploy compatible backend changes before releasing a frontend that depends on new query fields. In particular, both expense forms require `expenses.getSharedExpenses` to return `user._id` alongside `user.name`. An older backend returning only the name leaves the other payer undefined, even when the frontend builds and typechecks against the newer local backend source.
 
 ## Production Cutover Checklist
 
