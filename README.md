@@ -43,7 +43,7 @@ VITE_CONVEX_URL=
 
 ### Other variables
 
-These are not part of the static frontend deployment, but may still be used by other local workflows.
+These are CLI/server variables and are not embedded into the frontend bundle. Vercel uses `CONVEX_DEPLOY_KEY` to authenticate its Convex deployment.
 
 ```bash
 CLERK_SECRET_KEY=
@@ -106,17 +106,19 @@ Frontend deployments are managed from the Vercel dashboard:
 
 - production deploys come from `main`
 - every other branch and pull request gets a Vercel preview deployment
-- build command is `bun run build`, output directory is `dist/client`
+- build command is `bunx convex deploy --cmd 'bun run build' --cmd-url-env-var-name VITE_CONVEX_URL`, output directory is `dist/client`
 - SPA fallback is handled by `vercel.json`, so direct loads of routes like `/dashboard` work
 - `vercel.json` also pins `framework` to `vite` so Vercel does not keep treating this as the previous TanStack Start app
 
 If an existing Vercel project still has a TanStack Start (or other SSR) framework preset, switch it to Vite or Other and set the output directory to `dist/client`. Preview deploys need the same `VITE_*` env vars as production.
 
-Set `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_FRONTEND_API_URL`, and `VITE_CONVEX_URL` per environment in the Vercel project settings. Do not put `CLERK_SECRET_KEY` in the frontend build environment.
+Set `VITE_CLERK_PUBLISHABLE_KEY` and `VITE_CLERK_FRONTEND_API_URL` per environment in the Vercel project settings. The Convex deployment command supplies `VITE_CONVEX_URL` to the frontend build for the selected backend. Do not put `CLERK_SECRET_KEY` in the frontend build environment.
+
+Set `CONVEX_DEPLOY_KEY` in Vercel with a production deploy key scoped to **Production** and a preview deploy key scoped to **Preview**. Preview builds use separate Convex backends for their branches. See the [Convex Vercel deployment guide](https://docs.convex.dev/production/hosting/vercel) for key setup and preview environment variables.
 
 `.github/workflows/build.yml` runs lint, typecheck, format check, tests, and build on pushes to `main` and pull requests. It does not deploy.
 
-Convex functions also need a deployment, either through a Vercel integration or `bunx convex deploy`. The checked-in Vercel build command, `bun run build`, only builds the frontend; verify the effective production build logs include a Convex deployment when backend changes are required. Deploy compatible backend changes before releasing a frontend that depends on new query fields. In particular, both expense forms require `expenses.getSharedExpenses` to return `user._id` alongside `user.name`. An older backend returning only the name leaves the other payer undefined, even when the frontend builds and typechecks against the newer local backend source.
+The checked-in Vercel command runs the frontend build with the selected Convex URL, deploys the Convex functions after a successful build, and then lets Vercel publish the frontend. Keep `bun run build` as the frontend-only command for local builds and CI. Both expense forms require `expenses.getSharedExpenses` to return `user._id` alongside `user.name`; verify that field after deploying so frontend and backend versions stay compatible.
 
 ## Production Cutover Checklist
 
