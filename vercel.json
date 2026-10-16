@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "bun run build",
+  "buildCommand": "bunx convex deploy --cmd 'bun run build' --cmd-url-env-var-name VITE_CONVEX_URL",
   "outputDirectory": "dist/client",
   "redirects": [
     { "source": "/favicon.ico", "destination": "/icon.png", "permanent": true }
