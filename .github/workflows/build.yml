@@ -43,8 +43,8 @@ jobs:
       - name: Run Tests
         run: bun run test
 
-      - name: Install Chromium
-        run: bunx playwright install --with-deps chromium
+      - name: Install Browser Engines
+        run: bunx playwright install --with-deps chromium webkit
 
       - name: Run Browser Tests
         run: bun run test:browser

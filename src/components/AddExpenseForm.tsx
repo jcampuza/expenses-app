@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show, untrack } from "solid-js";
 import { Input, Select } from "@/components/ui/input";
 import { NumberInput } from "@/components/NumberInput";
 import { Label } from "@/components/ui/label";
@@ -35,19 +35,27 @@ export function AddExpenseForm(props: {
   otherUserId: Id<"users">;
 }) {
   let isManualSelection = false;
-  const [name, setName] = createSignal(props.initialValues.name);
-  const [category, setCategory] = createSignal(props.initialValues.category);
-  const [paidBy, setPaidBy] = createSignal(props.initialValues.paidBy);
+  // Start a draft once; subscription updates must not reset user edits.
+  const initialValues = untrack(() => ({ ...props.initialValues }));
+  const [name, setName] = createSignal(initialValues.name);
+  const [category, setCategory] = createSignal(initialValues.category);
+  const [payer, setPayer] = createSignal(
+    untrack(() =>
+      initialValues.paidBy === props.currentUserId
+        ? "you"
+        : initialValues.paidBy === props.otherUserId
+          ? "them"
+          : "",
+    ),
+  );
   const [splitEqually, setSplitEqually] = createSignal(
-    props.initialValues.splitEqually,
+    initialValues.splitEqually,
   );
   const [selectedCurrency, setSelectedCurrency] = createSignal(
-    props.initialValues.currency,
+    initialValues.currency,
   );
   const [totalCost, setTotalCost] = createSignal(
-    props.initialValues.totalCost === 0
-      ? ""
-      : props.initialValues.totalCost.toString(),
+    initialValues.totalCost === 0 ? "" : initialValues.totalCost.toString(),
   );
 
   const supportedCurrencies = createQuery(
@@ -66,7 +74,15 @@ export function AddExpenseForm(props: {
     const costRaw = formData["expense-totalcost"];
     const category = formData["expense-category"];
     const currency = formData["expense-currency"];
-    const paidBy = formData["expense-paidBy"];
+    // Resolve the selection to a known participant instead of casting a DOM
+    // string to an ID (an undefined option value can become "undefined").
+    const payer = formData["expense-paidBy"];
+    const paidBy =
+      payer === "you"
+        ? props.currentUserId
+        : payer === "them"
+          ? props.otherUserId
+          : undefined;
     const splitEqually = formData["expense-splitEqually"];
 
     if (typeof name !== "string" || name.trim() === "") {
@@ -86,8 +102,15 @@ export function AddExpenseForm(props: {
       alert("Currency must be selected");
       return;
     }
-    if (typeof paidBy !== "string" || paidBy.trim() === "") {
-      alert("Who paid must be selected");
+    if (
+      typeof paidBy !== "string" ||
+      paidBy.trim() === "" ||
+      paidBy === "undefined" ||
+      paidBy === "null"
+    ) {
+      alert(
+        "The selected payer is unavailable. Reopen the expense and try again.",
+      );
       return;
     }
 
@@ -96,7 +119,7 @@ export function AddExpenseForm(props: {
       totalCost: cost,
       category: category.trim(),
       currency: currency.trim(),
-      paidBy: paidBy.trim() as Id<"users">,
+      paidBy,
       splitEqually: splitEqually === "true",
     });
   };
@@ -222,13 +245,11 @@ export function AddExpenseForm(props: {
           id={`${props.id}-paidBy`}
           name="expense-paidBy"
           required
-          value={paidBy()}
-          onChange={(event) =>
-            setPaidBy(event.currentTarget.value as Id<"users">)
-          }
+          value={payer()}
+          onChange={(event) => setPayer(event.currentTarget.value)}
         >
-          <option value={props.currentUserId}>You</option>
-          <option value={props.otherUserId}>Them</option>
+          <option value="you">You</option>
+          <option value="them">Them</option>
         </Select>
       </div>
 
